@@ -29,6 +29,11 @@ pub enum PinShape {
     Custom(CustomPinShape<'static>),
 }
 
+pub enum PinLocation {
+    Horizontal,
+    Vertical,
+}
+
 /// Information about a pin returned by `SnarlViewer::show_input` and `SnarlViewer::show_output`.
 pub struct PinInfo {
     /// Shape of the pin.
@@ -42,6 +47,9 @@ pub struct PinInfo {
 
     /// Outline stroke of the pin.
     pub stroke: Stroke,
+
+    /// Location of the pin.
+    pub location: PinLocation,
 }
 
 impl Default for PinInfo {
@@ -51,6 +59,7 @@ impl Default for PinInfo {
             size: 1.0,
             fill: Color32::GRAY,
             stroke: Stroke::new(1.0, Color32::BLACK),
+            location: PinLocation::Horizontal,
         }
     }
 }
@@ -100,6 +109,15 @@ impl PinInfo {
     pub fn square() -> Self {
         PinInfo {
             shape: PinShape::Square,
+            ..Default::default()
+        }
+    }
+
+    /// Creates a square pin.
+    pub fn vertical() -> Self {
+        PinInfo {
+            shape: PinShape::Triangle,
+            location: PinLocation::Vertical,
             ..Default::default()
         }
     }
