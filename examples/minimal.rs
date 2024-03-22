@@ -8,6 +8,7 @@ use egui_snarl::{
 const STRING_COLOR: Color32 = Color32::from_rgb(0x00, 0xb0, 0x00);
 const NUMBER_COLOR: Color32 = Color32::from_rgb(0xb0, 0x00, 0x00);
 const UNTYPED_COLOR: Color32 = Color32::from_rgb(0xb0, 0xb0, 0xb0);
+const RELATION_COLOR: Color32 = Color32::from_rgb(0x00, 0xb0, 0xb0);
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 enum DemoNode {
@@ -21,6 +22,8 @@ enum DemoNode {
 
     /// Value node with a single output.
     String(String),
+
+    Tree,
 }
 
 impl DemoNode {
@@ -44,6 +47,8 @@ impl SnarlViewer<DemoNode> for DemoViewer {
             (_, DemoNode::String(_)) => {
                 unreachable!("String node has no inputs")
             }
+            (_, DemoNode::Tree) => {
+            }
         }
 
         for &remote in &to.remotes {
@@ -58,12 +63,14 @@ impl SnarlViewer<DemoNode> for DemoViewer {
             DemoNode::Sink => "Sink".to_owned(),
             DemoNode::Number(_) => "Number".to_owned(),
             DemoNode::String(_) => "String".to_owned(),
+            DemoNode::Tree => "Tree".to_owned(),
         }
     }
 
     fn inputs(&mut self, node: &DemoNode) -> usize {
         match node {
             DemoNode::Sink => 1,
+            DemoNode::Tree => 1,
             DemoNode::Number(_) => 0,
             DemoNode::String(_) => 0,
         }
@@ -72,6 +79,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
     fn outputs(&mut self, node: &DemoNode) -> usize {
         match node {
             DemoNode::Sink => 0,
+            DemoNode::Tree => 1,
             DemoNode::Number(_) => 1,
             DemoNode::String(_) => 1,
         }
@@ -100,6 +108,11 @@ impl SnarlViewer<DemoNode> for DemoViewer {
                             ui.label(format_float(value));
                             PinInfo::square().with_fill(NUMBER_COLOR)
                         }
+                        DemoNode::Tree => {
+                            // assert_eq!(remote.output, 0, "Number node has only one output");
+                            // ui.label(format_float(value));
+                            PinInfo::vertical().with_fill(RELATION_COLOR)
+                        }
                         DemoNode::String(ref value) => {
                             assert_eq!(remote.output, 0, "String node has only one output");
                             ui.label(format!("{:?}", value));
@@ -108,6 +121,9 @@ impl SnarlViewer<DemoNode> for DemoViewer {
                     },
                     _ => unreachable!("Sink input has only one wire"),
                 }
+            }
+            DemoNode::Tree => {
+                PinInfo::vertical().with_fill(RELATION_COLOR)
             }
             DemoNode::Number(_) => {
                 unreachable!("Number node has no inputs")
@@ -143,6 +159,9 @@ impl SnarlViewer<DemoNode> for DemoViewer {
                 ui.add(edit);
                 PinInfo::triangle().with_fill(STRING_COLOR)
             }
+            DemoNode::Tree => {
+                PinInfo::vertical().with_fill(RELATION_COLOR)
+            }
         }
     }
 
@@ -161,6 +180,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
                         DemoNode::Sink => unreachable!("Sink node has no outputs"),
                         DemoNode::Number(_) => NUMBER_COLOR,
                         DemoNode::String(_) => STRING_COLOR,
+                        DemoNode::Tree => RELATION_COLOR,
                     },
                     _ => unreachable!("Sink input has only one wire"),
                 }
@@ -170,6 +190,9 @@ impl SnarlViewer<DemoNode> for DemoViewer {
             }
             DemoNode::String(_) => {
                 unreachable!("String node has no inputs")
+            }
+            DemoNode::Tree => {
+                RELATION_COLOR
             }
         }
     }
@@ -186,6 +209,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
             }
             DemoNode::Number(_) => NUMBER_COLOR,
             DemoNode::String(_) => STRING_COLOR,
+            DemoNode::Tree => RELATION_COLOR,
         }
     }
 
@@ -207,6 +231,10 @@ impl SnarlViewer<DemoNode> for DemoViewer {
         }
         if ui.button("Sink").clicked() {
             snarl.insert_node(pos, DemoNode::Sink);
+            ui.close_menu();
+        }
+        if ui.button("Tree").clicked() {
+            snarl.insert_node(pos, DemoNode::Tree);
             ui.close_menu();
         }
     }
@@ -249,6 +277,9 @@ impl SnarlViewer<DemoNode> for DemoViewer {
             }
             DemoNode::String(_) => {
                 ui.label("Outputs string value");
+            }
+            DemoNode::Tree => {
+                ui.label("Can have relations");
             }
         }
     }
