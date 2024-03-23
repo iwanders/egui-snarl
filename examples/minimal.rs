@@ -70,7 +70,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
     fn inputs(&mut self, node: &DemoNode) -> usize {
         match node {
             DemoNode::Sink => 1,
-            DemoNode::Tree => 3,
+            DemoNode::Tree => 1,
             DemoNode::Number(_) => 0,
             DemoNode::String(_) => 0,
         }
@@ -79,7 +79,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
     fn outputs(&mut self, node: &DemoNode) -> usize {
         match node {
             DemoNode::Sink => 0,
-            DemoNode::Tree => 10,
+            DemoNode::Tree => 3,
             DemoNode::Number(_) => 1,
             DemoNode::String(_) => 1,
         }
@@ -124,7 +124,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
                         DemoNode::Tree => {
                             // assert_eq!(remote.output, 0, "Number node has only one output");
                             // ui.label(format_float(value));
-                            PinInfo::vertical().with_fill(RELATION_COLOR)
+                            PinInfo::square().with_fill(RELATION_COLOR)
                         }
                         DemoNode::String(ref value) => {
                             assert_eq!(remote.output, 0, "String node has only one output");
