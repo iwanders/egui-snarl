@@ -1,4 +1,4 @@
-use egui::{epaint::PathShape, pos2, Color32, Pos2, Rect, Shape, Stroke, Ui};
+use egui::{epaint::PathShape, pos2, Color32, Pos2, Vec2, Rect, Shape, Stroke, Ui};
 
 /// Layer where wires are rendered.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -18,9 +18,14 @@ fn wire_bezier(
     mut frame_size: f32,
     upscale: bool,
     downscale: bool,
-    from: Pos2,
-    to: Pos2,
+    from: (Pos2, Vec2),
+    to: (Pos2, Vec2),
 ) -> [Pos2; 6] {
+    let from_direction = from.1;
+    let from = from.0;
+    let to_direction = to.1;
+    let to = to.0;
+
     if upscale {
         frame_size = frame_size.max((from - to).length() / 4.0);
     }
@@ -28,10 +33,8 @@ fn wire_bezier(
         frame_size = frame_size.min((from - to).length() / 4.0);
     }
 
-    let from_norm_x = frame_size;
-    let from_2 = pos2(from.x + from_norm_x, from.y);
-    let to_norm_x = -from_norm_x;
-    let to_2 = pos2(to.x + to_norm_x, to.y);
+    let from_2 = from + frame_size * from_direction;
+    let to_2 = to + frame_size * to_direction;
 
     let between = (from_2 - to_2).length();
 
@@ -134,8 +137,8 @@ pub fn draw_wire(
     frame_size: f32,
     upscale: bool,
     downscale: bool,
-    from: Pos2,
-    to: Pos2,
+    from: (Pos2, Vec2),
+    to: (Pos2, Vec2),
     stroke: Stroke,
 ) {
     let points = wire_bezier(frame_size, upscale, downscale, from, to);
@@ -151,8 +154,8 @@ pub fn hit_wire(
     frame_size: f32,
     upscale: bool,
     downscale: bool,
-    from: Pos2,
-    to: Pos2,
+    from: (Pos2, Vec2),
+    to: (Pos2, Vec2),
     threshold: f32,
 ) -> bool {
     let points = wire_bezier(frame_size, upscale, downscale, from, to);

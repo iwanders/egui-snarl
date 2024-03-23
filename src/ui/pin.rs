@@ -29,10 +29,28 @@ pub enum PinShape {
     Custom(CustomPinShape<'static>),
 }
 
+/// Location of a pin.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum PinLocation {
     Horizontal,
     Vertical,
+}
+
+impl PinLocation {
+    /// Normalised vector pointing outwards from the input.
+    pub fn input_vec(&self) -> Vec2 {
+        match *self {
+            PinLocation::Horizontal => vec2(-1.0, 0.0),
+            PinLocation::Vertical => vec2(0.0, -1.0)
+        }
+    }
+    /// Normalised vector pointing outwards from the output.
+    pub fn output_vec(&self) -> Vec2 {
+        match *self {
+            PinLocation::Horizontal => vec2(1.0, 0.0),
+            PinLocation::Vertical => vec2(0.0, 1.0)
+        }
+    }
 }
 
 /// Information about a pin returned by `SnarlViewer::show_input` and `SnarlViewer::show_output`.
