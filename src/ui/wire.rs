@@ -38,6 +38,18 @@ fn wire_bezier(
 
     let between = (from_2 - to_2).length();
 
+    // Special case for fully vertical wires to just make them smooth, the
+    // finely tuned wire logic below is tuned for x coordinates but doesn't
+    // handle the vertical wires too well.
+    if from_direction.y != 0.0 && to_direction.y != 0.0 {
+        let t = 1.0 - ((frame_size * 2.0 - between) / (frame_size * 2.0)).max(0.0).min(1.0);
+        let from_2 = from + frame_size * from_direction* t;
+        let to_2 = to + frame_size * to_direction* t;
+        let middle_1 = from_2 + (to_2 - from_2).normalized() * frame_size * t;
+        let middle_2 = to_2 + (from_2 - to_2).normalized() * frame_size * t;
+        return [from, from_2, middle_1, middle_2, to_2, to];
+    }
+
     if from_2.x <= to_2.x && between >= frame_size * 2.0 {
         let middle_1 = from_2 + (to_2 - from_2).normalized() * frame_size;
         let middle_2 = to_2 + (from_2 - to_2).normalized() * frame_size;
