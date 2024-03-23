@@ -93,7 +93,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
         match snarl[pin.id.node] {
             DemoNode::Tree => {
                 if pin.id.input == 0 {
-                    Some(PinInfo::vertical().with_fill(RELATION_COLOR))
+                    Some(PinInfo::triangle().with_fill(RELATION_COLOR).vertical())
                 } else {
                     None
                 }
@@ -141,7 +141,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
             }
             DemoNode::Tree => {
                 if pin.id.input == 0 {
-                    PinInfo::vertical().with_fill(RELATION_COLOR)
+                    PinInfo::triangle().with_fill(RELATION_COLOR).vertical()
                 } else {
                     ui.label(format!("Input"));
                     PinInfo::triangle().with_fill(STRING_COLOR)
@@ -182,8 +182,9 @@ impl SnarlViewer<DemoNode> for DemoViewer {
                 PinInfo::triangle().with_fill(STRING_COLOR)
             }
             DemoNode::Tree => {
+                // You could draw elements here, like a label:
                 // ui.add(egui::Label::new(format!("{:?}", pin.id.output)));
-                PinInfo::vertical().with_fill(RELATION_COLOR)
+                PinInfo::triangle().with_fill(RELATION_COLOR).vertical()
             }
         }
     }
@@ -195,7 +196,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
     ) -> Option<PinInfo> {
         match snarl[pin.id.node] {
             DemoNode::Tree => {
-                return Some(PinInfo::vertical().with_fill(RELATION_COLOR));
+                return Some(PinInfo::triangle().with_fill(RELATION_COLOR).vertical());
             }
             _ => None
         }

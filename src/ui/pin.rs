@@ -108,6 +108,12 @@ impl PinInfo {
         self
     }
 
+    /// Sets the location of the pin.
+    pub fn with_location(mut self, location: PinLocation) -> Self {
+        self.location = location;
+        self
+    }
+
     /// Creates a circle pin.
     pub fn circle() -> Self {
         PinInfo {
@@ -132,13 +138,10 @@ impl PinInfo {
         }
     }
 
-    /// Creates a square pin.
-    pub fn vertical() -> Self {
-        PinInfo {
-            shape: PinShape::Triangle,
-            location: PinLocation::Vertical,
-            ..Default::default()
-        }
+    /// Makes the pin vertical
+    pub fn vertical(mut self) -> Self {
+        self.location = PinLocation::Vertical;
+        self
     }
 
     /// Creates a square pin.
