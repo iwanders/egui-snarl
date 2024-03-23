@@ -721,6 +721,13 @@ impl<T> Snarl<T> {
 
             // Show input pins.
 
+            // Top row inputs sit exactly on the header_frame top line.
+            let inputs_top_row = &mut ui.child_ui_with_id_source(
+                header_rect,
+                Layout::left_to_right(Align::Center),
+                "top_inputs",
+            );
+
             // Input pins on the left.
             let inputs_ui = &mut ui.child_ui_with_id_source(
                 payload_rect,
@@ -731,8 +738,17 @@ impl<T> Snarl<T> {
             inputs_ui.set_clip_rect(payload_clip_rect.intersect(viewport));
 
             for in_pin in &inputs {
+                let draw_base : &mut Ui = if let Some(pin_info) = viewer.vertical_input(in_pin, self) {
+                    if pin_info.location == pin::PinLocation::Vertical {
+                        inputs_top_row
+                    } else {
+                        inputs_ui
+                    }
+                } else {
+                    inputs_ui
+                };
                 // Show input pin.
-                inputs_ui.with_layout(Layout::left_to_right(Align::Min), |ui| {
+                draw_base.with_layout(Layout::left_to_right(Align::Min), |ui| {
                     // Allocate space for pin shape.
                     let (pin_id, _) = ui.allocate_space(vec2(pin_size * 1.5, pin_size * 1.5));
 

@@ -54,6 +54,11 @@ pub trait SnarlViewer<T> {
     fn show_input(&mut self, pin: &InPin, ui: &mut Ui, scale: f32, snarl: &mut Snarl<T>)
         -> PinInfo;
 
+    /// Obtain pin info for vertical inputs, these cannot draw elements themselves.
+    fn vertical_input(&mut self, pin: &InPin, snarl: &mut Snarl<T>) -> Option<PinInfo> {
+        None
+    }
+
     /// Renders the node's output pin.
     fn show_output(
         &mut self,

@@ -29,6 +29,7 @@ pub enum PinShape {
     Custom(CustomPinShape<'static>),
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum PinLocation {
     Horizontal,
     Vertical,

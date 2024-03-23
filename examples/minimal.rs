@@ -85,6 +85,19 @@ impl SnarlViewer<DemoNode> for DemoViewer {
         }
     }
 
+    fn vertical_input(
+        &mut self,
+        pin: &InPin,
+        snarl: &mut Snarl<DemoNode>
+    ) -> Option<PinInfo> {
+        match snarl[pin.id.node] {
+            DemoNode::Tree => {
+                return Some(PinInfo::vertical().with_fill(RELATION_COLOR));
+            }
+            _ => None
+        }
+    }
+
     fn show_input(
         &mut self,
         pin: &InPin,
