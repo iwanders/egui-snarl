@@ -528,6 +528,34 @@ impl<T> Snarl<T> {
                                 }
                             }
                         }
+                        // If going from input to input, swap all connections.
+                        (Some(NewWires::In(left_in_pins)), Some(AnyPin::In(right_in_pin))) => {
+                            if left_in_pins.len() == 1 {
+                                let mut to_disconnect = vec![];
+                                let mut to_connect = vec![];
+
+                                let left_in_pin = left_in_pins.first().unwrap();
+                                for v in self.wires.iter() {
+                                    if v.in_pin == *left_in_pin {
+                                        to_disconnect.push((OutPin::new(self, v.out_pin), InPin::new(self, *left_in_pin)));
+                                        to_connect.push((OutPin::new(self, v.out_pin), InPin::new(self, right_in_pin)));
+                                    }
+                                }
+                                for v in self.wires.iter() {
+                                    if v.in_pin == right_in_pin {
+                                        to_disconnect.push((OutPin::new(self, v.out_pin), InPin::new(self, right_in_pin)));
+                                        to_connect.push((OutPin::new(self, v.out_pin), InPin::new(self, *left_in_pin)));
+                                    }
+                                }
+                                // Remove the old connections and set up the new connections.
+                                for (disconnect_out, disconnect_in) in &to_disconnect {
+                                    viewer.disconnect(disconnect_out, disconnect_in, self);
+                                }
+                                for (connect_out, connect_in) in &to_connect {
+                                    viewer.connect(connect_out, connect_in, self);
+                                }
+                            }
+                        }
 
                         _ => {}
                     }
