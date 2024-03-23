@@ -41,7 +41,7 @@ pub trait SnarlViewer<T> {
         snarl: &mut Snarl<T>,
     ) {
         let _ = (inputs, outputs, scale);
-        ui.label(self.title(&snarl[node]));
+        ui.add(egui::Label::new(self.title(&snarl[node])).selectable(false));
     }
 
     /// Returns number of output pins of the node.
@@ -67,6 +67,12 @@ pub trait SnarlViewer<T> {
         scale: f32,
         snarl: &mut Snarl<T>,
     ) -> PinInfo;
+
+
+    /// Obtain pin info for vertical outputs, these cannot draw elements themselves.
+    fn vertical_output(&mut self, _pin: &OutPin, _snarl: &mut Snarl<T>) -> Option<PinInfo> {
+        None
+    }
 
     /// Renders the node's body.
     fn show_body(

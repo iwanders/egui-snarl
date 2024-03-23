@@ -721,12 +721,12 @@ impl<T> Snarl<T> {
 
             // Show input pins.
 
-            // Top row inputs sit exactly on the header_frame top line...
-            // Use an arbitrary height, they get centered anyway.
-            const HEIGHT_CONTAINER: f32 = 100.0;
+            // Top row inputs sit exactly on the header_frame top line.
+            // This box is zero height, but it's only used for positioning
+            // of the input pins, so maybe that's fine?
             let top_input_rect = Rect::from_min_max(
-                pos2(node_frame_rect.min.x, node_frame_rect.min.y + HEIGHT_CONTAINER),
-                pos2(node_frame_rect.max.x, node_frame_rect.min.y - HEIGHT_CONTAINER),
+                pos2(node_frame_rect.min.x, node_frame_rect.min.y),
+                pos2(node_frame_rect.max.x, node_frame_rect.min.y),
             );
 
             // Input pins on the top.
@@ -849,34 +849,47 @@ impl<T> Snarl<T> {
                 return;
             }
 
-            // Show output pins.
+            // Show output pins, either at the bottom or on the right.
+            let bottom_output_rect = Rect::from_min_max(
+                pos2(node_frame_rect.min.x, node_frame_rect.max.y),
+                pos2(node_frame_rect.max.x, node_frame_rect.max.y),
+            );
+            let outputs_bottom_row_ui = &mut ui.child_ui_with_id_source(
+                bottom_output_rect,
+                Layout::left_to_right(Align::Center),
+                "bottom_outputs",
+            );
+            outputs_bottom_row_ui.set_clip_rect(viewport);
 
             // Outputs are placed under the header and must not go outside of the header frame.
-
-            let _bottom_output_rect = Rect::from_min_max(
-                pos2(node_rect.min.x, node_rect.max.y + 500.0),
-                pos2(node_rect.max.x, node_rect.max.y - 500.0),
-            );
             let outputs_ui = &mut ui.child_ui_with_id_source(
                 payload_rect,
                 Layout::top_down(Align::Max),
                 "outputs",
             );
-
             outputs_ui.set_clip_rect(payload_clip_rect.intersect(viewport));
 
-            // Output pins on the right.
+            // Output pins on the right or bottom.
             for out_pin in &outputs {
+                // Depending on pin location, determine ui.
+                let (draw_base, layout, vertical_output) : (&mut Ui, Layout, bool) = if let Some(pin_info) = viewer.vertical_output(out_pin, self) {
+                    if pin_info.location == pin::PinLocation::Vertical {
+                        (outputs_bottom_row_ui, Layout::left_to_right(Align::Min), true)
+                    } else {
+                        (outputs_ui, Layout::right_to_left(Align::Min), false)
+                    }
+                } else {
+                    (outputs_ui, Layout::right_to_left(Align::Min), false)
+                };
                 // Show output pin.
-                outputs_ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                draw_base.with_layout(layout, |ui| {
                     // Allocate space for pin shape.
-
                     let (pin_id, _) = ui.allocate_space(vec2(pin_size * 1.5, pin_size * 1.5));
 
                     let y0 = ui.cursor().min.y;
 
                     // Show output content
-                    let pin_info = viewer.show_output(out_pin, ui, snarl_state.scale(), self);
+                    let pin_info = viewer.show_output(out_pin, ui, snarl_state.scale(), self); // TODO? Prevent calling this.
                     if !self.nodes.contains(node.0) {
                         // If removed
                         return;
@@ -886,10 +899,15 @@ impl<T> Snarl<T> {
 
                     // ui.end_row();
 
-                    // Centered vertically.
-                    let y = min_pin_y.max((y0 + y1) * 0.5);
+                    // Position the pin appropriately.
+                    let (x, y) = if !vertical_output {
+                        // Centered vertically.
+                        (output_x, min_pin_y.max((y0 + y1) * 0.5))
+                    } else {
+                        (ui.cursor().min.x, y0)
+                    };
 
-                    let pin_pos = pos2(output_x, y);
+                    let pin_pos = pos2(x, y);
 
                     output_positions.insert(out_pin.id, (pin_pos, pin_info.fill, pin_info.location));
 
@@ -955,7 +973,7 @@ impl<T> Snarl<T> {
             }
 
             let mut new_pins_size = vec2(
-                inputs_size.x + outputs_size.x + node_style.spacing.item_spacing.x + inputs_top_row_ui.min_rect().width(),
+                inputs_size.x + outputs_size.x + node_style.spacing.item_spacing.x + inputs_top_row_ui.min_rect().width().max(outputs_bottom_row_ui.min_rect().width()),
                 f32::max(inputs_size.y, outputs_size.y),
             );
 

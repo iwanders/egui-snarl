@@ -70,7 +70,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
     fn inputs(&mut self, node: &DemoNode) -> usize {
         match node {
             DemoNode::Sink => 1,
-            DemoNode::Tree => 1,
+            DemoNode::Tree => 3,
             DemoNode::Number(_) => 0,
             DemoNode::String(_) => 0,
         }
@@ -79,7 +79,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
     fn outputs(&mut self, node: &DemoNode) -> usize {
         match node {
             DemoNode::Sink => 0,
-            DemoNode::Tree => 1,
+            DemoNode::Tree => 10,
             DemoNode::Number(_) => 1,
             DemoNode::String(_) => 1,
         }
@@ -175,6 +175,19 @@ impl SnarlViewer<DemoNode> for DemoViewer {
             DemoNode::Tree => {
                 PinInfo::vertical().with_fill(RELATION_COLOR)
             }
+        }
+    }
+
+    fn vertical_output(
+        &mut self,
+        pin: &OutPin,
+        snarl: &mut Snarl<DemoNode>
+    ) -> Option<PinInfo> {
+        match snarl[pin.id.node] {
+            DemoNode::Tree => {
+                return Some(PinInfo::vertical().with_fill(RELATION_COLOR));
+            }
+            _ => None
         }
     }
 
