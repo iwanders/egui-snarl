@@ -70,7 +70,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
     fn inputs(&mut self, node: &DemoNode) -> usize {
         match node {
             DemoNode::Sink => 1,
-            DemoNode::Tree => 1,
+            DemoNode::Tree => 2,
             DemoNode::Number(_) => 0,
             DemoNode::String(_) => 0,
         }
@@ -92,7 +92,11 @@ impl SnarlViewer<DemoNode> for DemoViewer {
     ) -> Option<PinInfo> {
         match snarl[pin.id.node] {
             DemoNode::Tree => {
-                return Some(PinInfo::vertical().with_fill(RELATION_COLOR));
+                if pin.id.input == 0 {
+                    Some(PinInfo::vertical().with_fill(RELATION_COLOR))
+                } else {
+                    None
+                }
             }
             _ => None
         }
@@ -136,7 +140,12 @@ impl SnarlViewer<DemoNode> for DemoViewer {
                 }
             }
             DemoNode::Tree => {
-                PinInfo::vertical().with_fill(RELATION_COLOR)
+                if pin.id.input == 0 {
+                    PinInfo::vertical().with_fill(RELATION_COLOR)
+                } else {
+                    ui.label(format!("Input"));
+                    PinInfo::triangle().with_fill(STRING_COLOR)
+                }
             }
             DemoNode::Number(_) => {
                 unreachable!("Number node has no inputs")
@@ -173,6 +182,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
                 PinInfo::triangle().with_fill(STRING_COLOR)
             }
             DemoNode::Tree => {
+                // ui.add(egui::Label::new(format!("{:?}", pin.id.output)));
                 PinInfo::vertical().with_fill(RELATION_COLOR)
             }
         }
