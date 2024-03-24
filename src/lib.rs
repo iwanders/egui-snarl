@@ -51,7 +51,7 @@ struct Node<T> {
 }
 
 /// Output pin identifier.
-/// Cosists of node id and pin index.
+/// Consists of node id and pin index.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct OutPinId {
@@ -62,7 +62,7 @@ pub struct OutPinId {
     pub output: usize,
 }
 
-/// Input pin identifier. Cosists of node id and pin index.
+/// Input pin identifier. Consists of node id and pin index.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct InPinId {
@@ -179,10 +179,25 @@ impl Wires {
             .map(|wire| (wire.in_pin))
     }
 
+    fn wired_node_inputs(&self, node: NodeId) -> impl Iterator<Item = InPinId> + '_ {
+        self.wires
+            .iter()
+            .filter(move |wire| wire.in_pin.node == node)
+            .map(|wire| (wire.in_pin))
+    }
+
+
     fn wired_outputs(&self, in_pin: InPinId) -> impl Iterator<Item = OutPinId> + '_ {
         self.wires
             .iter()
             .filter(move |wire| wire.in_pin == in_pin)
+            .map(|wire| (wire.out_pin))
+    }
+
+    fn wired_node_outputs(&self, node: NodeId) -> impl Iterator<Item = OutPinId> + '_ {
+        self.wires
+            .iter()
+            .filter(move |wire| wire.out_pin.node == node)
             .map(|wire| (wire.out_pin))
     }
 
@@ -440,10 +455,22 @@ impl<T> Snarl<T> {
         InPin::new(self, pin)
     }
 
+    /// Returns InPinId for the provided node that are connected to some output.
+    #[track_caller]
+    pub fn in_pins_connected(&mut self, idx: NodeId) ->  impl Iterator<Item = InPinId> + '_  {
+        self.wires.wired_node_inputs(idx)
+    }
+
     /// Returns output pin of the node.
     #[must_use]
     pub fn out_pin(&self, pin: OutPinId) -> OutPin {
         OutPin::new(self, pin)
+    }
+
+    /// Returns OutPinIds for the provided node that are connected to some input.
+    #[track_caller]
+    pub fn out_pins_connected(&mut self, idx: NodeId) ->  impl Iterator<Item = OutPinId> + '_  {
+        self.wires.wired_node_outputs(idx)
     }
 }
 
