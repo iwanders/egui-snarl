@@ -18,6 +18,7 @@ fn wire_bezier(
     mut frame_size: f32,
     upscale: bool,
     downscale: bool,
+    simple: bool,
     from: (Pos2, Vec2),
     to: (Pos2, Vec2),
 ) -> [Pos2; 6] {
@@ -38,10 +39,8 @@ fn wire_bezier(
 
     let between = (from_2 - to_2).length();
 
-    // Special case for fully vertical wires to just make them smooth, the
-    // finely tuned wire logic below is tuned for x coordinates but doesn't
-    // handle the vertical wires too well.
-    if from_direction.y != 0.0 && to_direction.y != 0.0 {
+    // If using simple wires, just scale down from_2 and to_2.
+    if simple {
         let t = 1.0 - ((frame_size * 2.0 - between) / (frame_size * 2.0)).max(0.0).min(1.0);
         let from_2 = from + frame_size * from_direction* t;
         let to_2 = to + frame_size * to_direction* t;
@@ -149,11 +148,12 @@ pub fn draw_wire(
     frame_size: f32,
     upscale: bool,
     downscale: bool,
+    simple: bool,
     from: (Pos2, Vec2),
     to: (Pos2, Vec2),
     stroke: Stroke,
 ) {
-    let points = wire_bezier(frame_size, upscale, downscale, from, to);
+    let points = wire_bezier(frame_size, upscale, downscale, simple, from, to);
 
     let bb = Rect::from_points(&points);
     if ui.is_rect_visible(bb) {
@@ -166,11 +166,12 @@ pub fn hit_wire(
     frame_size: f32,
     upscale: bool,
     downscale: bool,
+    simple: bool,
     from: (Pos2, Vec2),
     to: (Pos2, Vec2),
     threshold: f32,
 ) -> bool {
-    let points = wire_bezier(frame_size, upscale, downscale, from, to);
+    let points = wire_bezier(frame_size, upscale, downscale, simple, from, to);
     hit_bezier(pos, &points, threshold)
 }
 

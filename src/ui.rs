@@ -49,8 +49,11 @@ pub struct SnarlStyle {
     /// Whether to downscale wire frame when nodes are close.
     pub downscale_wire_frame: bool,
 
-    /// Weather to upscale wire frame when nodes are close.
+    /// Wether to upscale wire frame when nodes are close.
     pub upscale_wire_frame: bool,
+
+    /// Whether to use simple wires without curl.
+    pub simple_wire: bool,
 
     /// Layer where wires are rendered.
     pub wire_layer: WireLayer,
@@ -164,6 +167,7 @@ impl SnarlStyle {
             wire_frame_size: None,
             downscale_wire_frame: false,
             upscale_wire_frame: true,
+            simple_wire: false,
             wire_layer: WireLayer::BehindNodes,
             header_drag_space: None,
             collapsible: true,
@@ -368,6 +372,7 @@ impl<T> Snarl<T> {
                                 wire_frame_size,
                                 style.upscale_wire_frame,
                                 style.downscale_wire_frame,
+                                style.simple_wire,
                                 (from, direction_from.output_vec()),
                                 (to, direction_to.input_vec()),
                                 wire_width.max(1.5),
@@ -402,6 +407,7 @@ impl<T> Snarl<T> {
                         wire_frame_size,
                         style.upscale_wire_frame,
                         style.downscale_wire_frame,
+                        style.simple_wire,
                         (from, direction_from.output_vec()),
                         (to, direction_to.input_vec()),
                         Stroke::new(draw_width, color),
@@ -442,6 +448,7 @@ impl<T> Snarl<T> {
                                 wire_frame_size,
                                 style.upscale_wire_frame,
                                 style.downscale_wire_frame,
+                                style.simple_wire,
                                 (from, vec2(0.0, 0.0)),
                                 (to, direction_to.input_vec()),
                                 Stroke::new(wire_width, color),
@@ -459,6 +466,7 @@ impl<T> Snarl<T> {
                                 wire_frame_size,
                                 style.upscale_wire_frame,
                                 style.downscale_wire_frame,
+                                style.simple_wire,
                                 (from, direction_from.output_vec()),
                                 (to, vec2(0.0, 0.0)),
                                 Stroke::new(wire_width, color),
@@ -500,7 +508,7 @@ impl<T> Snarl<T> {
                                 );
                             }
                         }
-                        // If going from output to output, we can do moves and swaps;
+                        // If going from output to output (or input to input), we can do moves and swaps;
                         // Simple one to one swaps are simple... but moving a block of outputs
                         // by holding shift is better, it also makes this logic complex :(
                         // Lets follow the following logic:
