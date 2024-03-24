@@ -30,28 +30,26 @@ struct DemoViewer;
 
 fn handle_tree_outputs(node: NodeId, snarl: &mut Snarl<DemoNode>) {
     let current_count;
-    if let DemoNode::Tree(current_count_tree, _) = snarl[node] {
-        // The + 1 here is a bit of a hack, this ensures that we can also
-        // use this function when a new wire was placed on the last input.
-        // Alternatively, snarl provides us the highest pin number for which it
-        // has a wire.
-        current_count = current_count_tree + 1;
+    if let DemoNode::Tree(_, _) = snarl[node] {
+        current_count = snarl.out_pins_connected(node).map(|v| v.output).max();
     } else {
         return;
     }
 
-    let mut highest_used_output = 0;
-    // truncate to the first output that has remotes.
-    for i in 0..current_count{
-        let outpinid = egui_snarl::OutPinId{node, output: i};
-        let full_pin = snarl.out_pin(outpinid);
-        if !full_pin.remotes.is_empty(){
-            highest_used_output = i + 1;
+    let mut values_in_use = 0;
+    if let Some(v) = current_count {
+        // truncate to the first output that has remotes.
+        for i in 0..=v{
+            let outpinid = egui_snarl::OutPinId{node, output: i};
+            let full_pin = snarl.out_pin(outpinid);
+            if !full_pin.remotes.is_empty(){
+                values_in_use = i + 1;  // +1 to go from index to count.
+            }
         }
     }
 
     if let DemoNode::Tree(ref mut v, _) = snarl[node]{
-        *v = highest_used_output;
+        *v = values_in_use;
     }
 }
 

@@ -501,30 +501,92 @@ impl<T> Snarl<T> {
                             }
                         }
                         // If going from output to output, swap all connections.
-                        (Some(NewWires::Out(left_out_pins)), Some(AnyPin::Out(right_out_pin))) => {
-                            if left_out_pins.len() == 1 {
-                                let mut to_disconnect = vec![];
-                                let mut to_connect = vec![];
+                        (Some(NewWires::Out(left_pins)), Some(AnyPin::Out(right_out_pin))) => {
+                            // Simple one to one swaps are simple... but moving a block of outputs
+                            // by holding shift is better, it also makes this logic complex :(
+                            // Lets follow the following logic:
+                            //  The last pin on left is called the anchor. It is the last selected pin.
+                            //  The anchor moves to the right out pin, this is the most intuitive.
+                            //  With this logic, we end up with two sets of pins:
+                            //    - The source pins from left_out_pins, with pin indices relative to the anchor.
+                            //    - The destination pins from right_output, pin indices relative to anchor, offset to right out pin.
+                            //  If the source and destination pins are disjoint sets, we swap the pins.
+                            //  If the source and destination pins overlap, we only allow the operation iff the destination pins
+                            //   are empty after the source pins would be disconnected. This avoids having to think about where to move
+                            //   that pin and potentially make a wrong choice, and it also doesn't make assumptions about the 
+                            //   network allowing multiple outputs.
 
-                                let left_output_pin = left_out_pins.first().unwrap();
-                                for v in self.wires.iter() {
-                                    if v.out_pin == *left_output_pin {
-                                        to_disconnect.push((OutPin::new(self, *left_output_pin), InPin::new(self, v.in_pin)));
-                                        to_connect.push((OutPin::new(self, right_out_pin), InPin::new(self, v.in_pin)));
+                            let mut valid = true;
+                            let left_anchor = left_pins.last().unwrap();
+                            let relative_indices = left_pins.iter().map(|p| {p.output as i64 - left_anchor.output as i64}).collect::<Vec<_>>();
+                            let mut right_pins = vec![];
+                            for offset in relative_indices.iter() {
+                                let right_value = offset + right_out_pin.output as i64;
+                                if right_value < 0 {
+                                    valid = false
+                                }
+                                right_pins.push(OutPinId{node: right_out_pin.node, output: right_value as usize});
+                            }
+                            println!("left_out_pins: {left_pins:?}");
+                            println!("right_pins: {right_pins:?}");
+
+                            // Okay, we now have the left and right sets, check if they intersect.
+                            let left_set = left_pins.iter().copied().collect::<std::collections::HashSet<OutPinId>>();
+                            let right_set = right_pins.iter().copied().collect::<std::collections::HashSet<OutPinId>>();
+
+                            let swapping = left_set.is_disjoint(&right_set);
+                            if valid {
+                                if swapping {
+                                    let mut to_disconnect = vec![];
+                                    let mut to_connect = vec![];
+                                    for (left_out, right_out) in left_pins.iter().zip(right_pins.iter()) {
+                                        let left_out_pin = self.out_pin(*left_out);
+                                        for input in left_out_pin.remotes.iter() {
+                                            to_disconnect.push((*left_out, *input));
+                                            to_connect.push((*right_out, *input));
+                                        }
+                
+                                        let right_out_pin = self.out_pin(*right_out);
+                                        for input in right_out_pin.remotes.iter() {
+                                            to_disconnect.push((*right_out, *input));
+                                            to_connect.push((*left_out, *input));
+                                        }
                                     }
-                                }
-                                for v in self.wires.iter() {
-                                    if v.out_pin == right_out_pin {
-                                        to_disconnect.push((OutPin::new(self, right_out_pin), InPin::new(self, v.in_pin)));
-                                        to_connect.push((OutPin::new(self, *left_output_pin), InPin::new(self, v.in_pin)));
+
+                                    // Disconnnect then reconnect, that should always be the valid order.
+                                    for (disconnect_out, disconnect_in) in to_disconnect {
+                                        viewer.disconnect(&OutPin::new(self, disconnect_out), &InPin::new(self, disconnect_in), self);
                                     }
-                                }
-                                // Make new connections first, in case of a variable number of pins.
-                                for (connect_out, connect_in) in &to_connect {
-                                    viewer.connect(connect_out, connect_in, self);
-                                }
-                                for (disconnect_out, disconnect_in) in &to_disconnect {
-                                    viewer.disconnect(disconnect_out, disconnect_in, self);
+                                    for (connect_out, connect_in) in to_connect {
+                                        viewer.connect(&OutPin::new(self, connect_out), &InPin::new(self, connect_in), self);
+                                    }
+                                } else {
+                                    // There's overlap, check if the slots we'd occupy are empty after we disconnect.
+                                    // We will disconnect things in the left set, so we only need to check what is in right
+                                    // and not in left.
+                                    let valid = right_set.difference(&left_set).all(|v|self.out_pin(*v).remotes.is_empty());
+                                    for z in right_set.difference(&left_set) {
+                                        println!("Z: {z:?} -> {:?}", self.out_pin(*z).remotes);
+                                    }
+                                    println!("Overlapping move valid: {valid:?}");
+                                    if valid {
+                                        let mut to_disconnect = vec![];
+                                        let mut to_connect = vec![];
+                                        for (left_out, right_out) in left_pins.iter().zip(right_pins.iter()) {
+                                            let left_out_pin = self.out_pin(*left_out);
+                                            for input in left_out_pin.remotes.iter() {
+                                                to_disconnect.push((OutPin::new(self, *left_out), InPin::new(self, *input)));
+                                                to_connect.push((OutPin::new(self, *right_out), InPin::new(self, *input)));
+                                            }
+                                        }
+                                        // Disconnnect then reconnect, that should always be the valid order.
+                                        for (disconnect_out, disconnect_in) in &to_disconnect {
+                                            viewer.disconnect(disconnect_out, disconnect_in, self);
+                                        }
+                                        for (connect_out, connect_in) in &to_connect {
+                                            viewer.connect(connect_out, connect_in, self);
+                                        }
+                                    }
                                 }
                             }
                         }
