@@ -668,6 +668,7 @@ impl<T> Snarl<T> {
         r.context_menu(|ui| {
             viewer.node_menu(node, &inputs, &outputs, ui, snarl_state.scale(), self);
         });
+        let draw_variadic = r.contains_pointer() && snarl_state.has_new_wires();
 
         if !self.nodes.contains(node.0) {
             node_state.clear(ui.ctx());
@@ -801,6 +802,9 @@ impl<T> Snarl<T> {
                 "inputs",
             );
             inputs_ui.set_clip_rect(payload_clip_rect.intersect(viewport));
+            if draw_variadic {
+                inputs.push(viewer.variadic_input(node, self));
+            }
 
             for in_pin in &inputs {
                 // Depending on pin location, determine ui.

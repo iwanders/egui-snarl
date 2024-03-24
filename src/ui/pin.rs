@@ -114,6 +114,13 @@ impl PinInfo {
         self
     }
 
+    /// Set the alpha of the pin, both fill and stroke.
+    pub fn with_gamma(mut self, alpha: f32) -> Self {
+        self.fill = self.fill.gamma_multiply(alpha);
+        self.stroke.color = self.stroke.color.gamma_multiply(alpha);
+        self
+    }
+
     /// Creates a circle pin.
     pub fn circle() -> Self {
         PinInfo {

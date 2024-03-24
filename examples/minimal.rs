@@ -155,6 +155,14 @@ impl SnarlViewer<DemoNode> for DemoViewer {
             }
         }
     }
+    /// Obtain a variadic input pin to be drawn, if it exists.
+    fn variadic_input(&mut self, node: NodeId, snarl: &mut Snarl<DemoNode>) -> Option<PinInfo> {
+         match snarl[node] {
+            DemoNode::Tree => Some(PinInfo::triangle().with_fill(STRING_COLOR).with_gamma(0.5)),
+            _ => None
+        }
+        
+    }
 
     fn show_output(
         &mut self,

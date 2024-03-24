@@ -59,6 +59,11 @@ pub trait SnarlViewer<T> {
         let _ = (pin, snarl);
         None
     }
+    /// Obtain a variadic input pin to be drawn, if it exists.
+    fn variadic_input(&mut self, node: NodeId, snarl: &mut Snarl<T>) -> Option<PinInfo> {
+        let _ = (node, snarl);
+        None
+    }
 
     /// Renders the node's output pin.
     fn show_output(
@@ -76,7 +81,7 @@ pub trait SnarlViewer<T> {
         None
     }
 
-    /// Renders the node's body.
+    /// Renders the node's body, be sure to also implement [`has_body`].
     fn show_body(
         &mut self,
         node: NodeId,
@@ -89,7 +94,7 @@ pub trait SnarlViewer<T> {
         let _ = (node, inputs, outputs, ui, scale, snarl);
     }
 
-    /// Renders the node's footer.
+    /// Renders the node's footer, be sure to also implement [`has_on_hover_popup`].
     fn show_footer(
         &mut self,
         node: NodeId,
@@ -102,7 +107,7 @@ pub trait SnarlViewer<T> {
         let _ = (node, inputs, outputs, ui, scale, snarl);
     }
 
-    /// Renders the node's on-hover popup.
+    /// Renders the node's on-hover popup, be sure to also implement [`has_footer`].
     fn show_on_hover_popup(
         &mut self,
         node: NodeId,
