@@ -54,7 +54,7 @@ pub trait SnarlViewer<T> {
     fn show_input(&mut self, pin: &InPin, ui: &mut Ui, scale: f32, snarl: &mut Snarl<T>)
         -> PinInfo;
 
-    /// Obtain pin info for vertical outputs, [`show_input`] is still called for it.
+    /// Obtain pin info for vertical outputs, [`Self::show_input`] is still called for it.
     fn vertical_input(&mut self, pin: &InPin, snarl: &mut Snarl<T>) -> Option<PinInfo> {
         let _ = (pin, snarl);
         None
@@ -70,13 +70,13 @@ pub trait SnarlViewer<T> {
     ) -> PinInfo;
 
 
-    /// Obtain pin info for vertical outputs, [`show_output`] is still called for it.
+    /// Obtain pin info for vertical outputs, [`Self::show_output`] is still called for it.
     fn vertical_output(&mut self, pin: &OutPin, snarl: &mut Snarl<T>) -> Option<PinInfo> {
         let _ = (pin, snarl);
         None
     }
 
-    /// Renders the node's body.
+    /// Renders the node's body, be sure to also implement [`Self::has_body`].
     fn show_body(
         &mut self,
         node: NodeId,
@@ -89,7 +89,7 @@ pub trait SnarlViewer<T> {
         let _ = (node, inputs, outputs, ui, scale, snarl);
     }
 
-    /// Renders the node's footer.
+    /// Renders the node's footer, be sure to also implement [`Self::has_on_hover_popup`].
     fn show_footer(
         &mut self,
         node: NodeId,
@@ -102,7 +102,7 @@ pub trait SnarlViewer<T> {
         let _ = (node, inputs, outputs, ui, scale, snarl);
     }
 
-    /// Renders the node's on-hover popup.
+    /// Renders the node's on-hover popup, be sure to also implement [`Self::has_footer`].
     fn show_on_hover_popup(
         &mut self,
         node: NodeId,

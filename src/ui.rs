@@ -93,7 +93,7 @@ pub struct SnarlStyle {
     pub node_frame: Option<Frame>,
 
     /// Frame used to draw node headers.
-    /// Defaults to [`node_frame`] without shadow and transparent fill.
+    /// Defaults to [`Self::node_frame`] without shadow and transparent fill.
     ///
     /// If set, it should not have shadow and fill should be either opaque of fully transparent
     /// unless layering of header fill color with node fill color is desired.
