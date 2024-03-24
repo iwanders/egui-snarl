@@ -6,7 +6,6 @@ use egui_snarl::{
 };
 
 const STRING_COLOR: Color32 = Color32::from_rgb(0x00, 0xb0, 0x00);
-const NUMBER_COLOR: Color32 = Color32::from_rgb(0xb0, 0x00, 0x00);
 const UNTYPED_COLOR: Color32 = Color32::from_rgb(0xb0, 0xb0, 0xb0);
 const RELATION_COLOR: Color32 = Color32::from_rgb(0x00, 0xb0, 0xb0);
 
@@ -17,13 +16,10 @@ enum DemoNode {
     Sink,
 
     /// Value node with a single output.
-    /// The value is editable in UI.
-    Number(f64),
-
-    /// Value node with a single output.
     String(String),
 
-    Tree,
+    /// Tree element with string input and variable horizontal outputs.
+    Tree(usize /* used outputs */),
 }
 
 impl DemoNode {
@@ -31,6 +27,31 @@ impl DemoNode {
 }
 
 struct DemoViewer;
+
+fn handle_tree_outputs(node: NodeId, snarl: &mut Snarl<DemoNode>) {
+    let current_count;
+    if let DemoNode::Tree(current_count_tree) = snarl[node] {
+        // The + 1 here is a bit of a hack, this ensures that we can also
+        // use this function when a new wire was placed on the last input.
+        current_count = current_count_tree + 1;
+    } else {
+        return;
+    }
+
+    let mut highest_used_output = 0;
+    // truncate to the first output that has remotes.
+    for i in 0..current_count{
+        let outpinid = egui_snarl::OutPinId{node, output: i};
+        let full_pin = snarl.out_pin(outpinid);
+        if !full_pin.remotes.is_empty(){
+            highest_used_output = i + 1;
+        }
+    }
+
+    if let DemoNode::Tree(ref mut v) = snarl[node]{
+        *v = highest_used_output;
+    }
+}
 
 impl SnarlViewer<DemoNode> for DemoViewer {
     #[inline]
@@ -40,15 +61,13 @@ impl SnarlViewer<DemoNode> for DemoViewer {
             (DemoNode::Sink, _) => {
                 unreachable!("Sink node has no outputs")
             }
-            (_, DemoNode::Sink) => {}
-            (_, DemoNode::Number(_)) => {
-                unreachable!("Number node has no inputs")
+            (DemoNode::Tree(_), _) => {
             }
+            (_, DemoNode::Sink) => {}
             (_, DemoNode::String(_)) => {
                 unreachable!("String node has no inputs")
             }
-            (_, DemoNode::Tree) => {
-            }
+            (_, _) => { }
         }
 
         for &remote in &to.remotes {
@@ -56,22 +75,39 @@ impl SnarlViewer<DemoNode> for DemoViewer {
         }
 
         snarl.connect(from.id, to.id);
+
+        handle_tree_outputs(from.id.node, snarl);
+        handle_tree_outputs(to.id.node, snarl);
+    }
+
+    fn disconnect(&mut self, from: &OutPin, to: &InPin, snarl: &mut Snarl<DemoNode>) {
+        snarl.disconnect(from.id, to.id);
+        handle_tree_outputs(from.id.node, snarl);
+        handle_tree_outputs(to.id.node, snarl);
+    }
+
+    fn drop_outputs(&mut self, pin: &OutPin, snarl: &mut Snarl<DemoNode>) {
+        snarl.drop_outputs(pin.id);
+        handle_tree_outputs(pin.id.node, snarl);
+    }
+
+    fn drop_inputs(&mut self, pin: &InPin, snarl: &mut Snarl<DemoNode>) {
+        snarl.drop_inputs(pin.id);
+        handle_tree_outputs(pin.id.node, snarl);
     }
 
     fn title(&mut self, node: &DemoNode) -> String {
         match node {
             DemoNode::Sink => "Sink".to_owned(),
-            DemoNode::Number(_) => "Number".to_owned(),
             DemoNode::String(_) => "String".to_owned(),
-            DemoNode::Tree => "Tree".to_owned(),
+            DemoNode::Tree(_) => "Tree".to_owned(),
         }
     }
 
     fn inputs(&mut self, node: &DemoNode) -> usize {
         match node {
             DemoNode::Sink => 1,
-            DemoNode::Tree => 2,
-            DemoNode::Number(_) => 0,
+            DemoNode::Tree(_) => 2, // string input and parent input.
             DemoNode::String(_) => 0,
         }
     }
@@ -79,8 +115,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
     fn outputs(&mut self, node: &DemoNode) -> usize {
         match node {
             DemoNode::Sink => 0,
-            DemoNode::Tree => 3,
-            DemoNode::Number(_) => 1,
+            DemoNode::Tree(children) => children + 1, // children 
             DemoNode::String(_) => 1,
         }
     }
@@ -91,7 +126,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
         snarl: &mut Snarl<DemoNode>
     ) -> Option<PinInfo> {
         match snarl[pin.id.node] {
-            DemoNode::Tree => {
+            DemoNode::Tree(_) => {
                 if pin.id.input == 0 {
                     Some(PinInfo::triangle().with_fill(RELATION_COLOR).vertical())
                 } else {
@@ -120,12 +155,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
                     }
                     [remote] => match snarl[remote.node] {
                         DemoNode::Sink => unreachable!("Sink node has no outputs"),
-                        DemoNode::Number(value) => {
-                            assert_eq!(remote.output, 0, "Number node has only one output");
-                            ui.label(format_float(value));
-                            PinInfo::square().with_fill(NUMBER_COLOR)
-                        }
-                        DemoNode::Tree => {
+                        DemoNode::Tree(_) => {
                             // assert_eq!(remote.output, 0, "Number node has only one output");
                             // ui.label(format_float(value));
                             PinInfo::square().with_fill(RELATION_COLOR)
@@ -139,16 +169,13 @@ impl SnarlViewer<DemoNode> for DemoViewer {
                     _ => unreachable!("Sink input has only one wire"),
                 }
             }
-            DemoNode::Tree => {
+            DemoNode::Tree(_) => {
                 if pin.id.input == 0 {
                     PinInfo::triangle().with_fill(RELATION_COLOR).vertical()
                 } else {
-                    ui.label(format!("Input"));
+                    ui.label(format!("String Input"));
                     PinInfo::triangle().with_fill(STRING_COLOR)
                 }
-            }
-            DemoNode::Number(_) => {
-                unreachable!("Number node has no inputs")
             }
             DemoNode::String(_) => {
                 unreachable!("String node has no inputs")
@@ -167,11 +194,6 @@ impl SnarlViewer<DemoNode> for DemoViewer {
             DemoNode::Sink => {
                 unreachable!("Sink node has no outputs")
             }
-            DemoNode::Number(ref mut value) => {
-                assert_eq!(pin.id.output, 0, "Number node has only one output");
-                ui.add(egui::DragValue::new(value));
-                PinInfo::square().with_fill(NUMBER_COLOR)
-            }
             DemoNode::String(ref mut value) => {
                 assert_eq!(pin.id.output, 0, "String node has only one output");
                 let edit = egui::TextEdit::singleline(value)
@@ -181,7 +203,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
                 ui.add(edit);
                 PinInfo::triangle().with_fill(STRING_COLOR)
             }
-            DemoNode::Tree => {
+            DemoNode::Tree(_) => {
                 // You could draw elements here, like a label:
                 // ui.add(egui::Label::new(format!("{:?}", pin.id.output)));
                 if pin.remotes.is_empty() {
@@ -199,7 +221,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
         snarl: &mut Snarl<DemoNode>
     ) -> Option<PinInfo> {
         match snarl[pin.id.node] {
-            DemoNode::Tree => {
+            DemoNode::Tree(_) => {
                 if pin.remotes.is_empty() {
                     Some(PinInfo::triangle().with_fill(RELATION_COLOR).vertical().wiring().with_gamma(0.5))
                 } else {
@@ -223,20 +245,16 @@ impl SnarlViewer<DemoNode> for DemoViewer {
                     [] => UNTYPED_COLOR,
                     [remote] => match snarl[remote.node] {
                         DemoNode::Sink => unreachable!("Sink node has no outputs"),
-                        DemoNode::Number(_) => NUMBER_COLOR,
                         DemoNode::String(_) => STRING_COLOR,
-                        DemoNode::Tree => RELATION_COLOR,
+                        DemoNode::Tree(_) => RELATION_COLOR,
                     },
                     _ => unreachable!("Sink input has only one wire"),
                 }
             }
-            DemoNode::Number(_) => {
-                unreachable!("Number node has no inputs")
-            }
             DemoNode::String(_) => {
                 unreachable!("String node has no inputs")
             }
-            DemoNode::Tree => {
+            DemoNode::Tree(_) => {
                 RELATION_COLOR
             }
         }
@@ -252,9 +270,8 @@ impl SnarlViewer<DemoNode> for DemoViewer {
             DemoNode::Sink => {
                 unreachable!("Sink node has no outputs")
             }
-            DemoNode::Number(_) => NUMBER_COLOR,
             DemoNode::String(_) => STRING_COLOR,
-            DemoNode::Tree => RELATION_COLOR,
+            DemoNode::Tree(_) => RELATION_COLOR,
         }
     }
 
@@ -266,10 +283,6 @@ impl SnarlViewer<DemoNode> for DemoViewer {
         snarl: &mut Snarl<DemoNode>,
     ) {
         ui.label("Add node");
-        if ui.button("Number").clicked() {
-            snarl.insert_node(pos, DemoNode::Number(0.0));
-            ui.close_menu();
-        }
         if ui.button("String").clicked() {
             snarl.insert_node(pos, DemoNode::String("".to_owned()));
             ui.close_menu();
@@ -279,7 +292,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
             ui.close_menu();
         }
         if ui.button("Tree").clicked() {
-            snarl.insert_node(pos, DemoNode::Tree);
+            snarl.insert_node(pos, DemoNode::Tree(0));
             ui.close_menu();
         }
     }
@@ -317,13 +330,10 @@ impl SnarlViewer<DemoNode> for DemoViewer {
             DemoNode::Sink => {
                 ui.label("Displays anything connected to it");
             }
-            DemoNode::Number(_) => {
-                ui.label("Outputs integer value");
-            }
             DemoNode::String(_) => {
                 ui.label("Outputs string value");
             }
-            DemoNode::Tree => {
+            DemoNode::Tree(_) => {
                 ui.label("Can have relations");
             }
         }
@@ -338,7 +348,7 @@ pub struct DemoApp {
 impl DemoApp {
     pub fn new(cx: &CreationContext) -> Self {
         let snarl = match cx.storage {
-            None => Snarl::new(),
+            None => Snarl::<DemoNode>::new(),
             Some(storage) => {
                 let snarl = storage
                     .get_string("snarl")
@@ -348,7 +358,7 @@ impl DemoApp {
                 snarl
             }
         };
-        // let snarl = Snarl::new();
+        // let snarl = Snarl::<DemoNode>::new();
 
         let style = match cx.storage {
             None => SnarlStyle::new(),
@@ -437,9 +447,4 @@ fn main() {
             .await
             .expect("failed to start eframe");
     });
-}
-
-fn format_float(v: f64) -> String {
-    let v = (v * 1000.0).round() / 1000.0;
-    format!("{}", v)
 }

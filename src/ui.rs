@@ -519,12 +519,12 @@ impl<T> Snarl<T> {
                                         to_connect.push((OutPin::new(self, *left_output_pin), InPin::new(self, v.in_pin)));
                                     }
                                 }
-                                // Remove the old connections and set up the new connections.
-                                for (disconnect_out, disconnect_in) in &to_disconnect {
-                                    viewer.disconnect(disconnect_out, disconnect_in, self);
-                                }
+                                // Make new connections first, in case of a variable number of pins.
                                 for (connect_out, connect_in) in &to_connect {
                                     viewer.connect(connect_out, connect_in, self);
+                                }
+                                for (disconnect_out, disconnect_in) in &to_disconnect {
+                                    viewer.disconnect(disconnect_out, disconnect_in, self);
                                 }
                             }
                         }
@@ -547,12 +547,12 @@ impl<T> Snarl<T> {
                                         to_connect.push((OutPin::new(self, v.out_pin), InPin::new(self, *left_in_pin)));
                                     }
                                 }
-                                // Remove the old connections and set up the new connections.
-                                for (disconnect_out, disconnect_in) in &to_disconnect {
-                                    viewer.disconnect(disconnect_out, disconnect_in, self);
-                                }
+                                // Make new connections first, in case of a variable number of pins.
                                 for (connect_out, connect_in) in &to_connect {
                                     viewer.connect(connect_out, connect_in, self);
+                                }
+                                for (disconnect_out, disconnect_in) in &to_disconnect {
+                                    viewer.disconnect(disconnect_out, disconnect_in, self);
                                 }
                             }
                         }
@@ -1039,9 +1039,10 @@ impl<T> Snarl<T> {
             }
 
             let mut new_pins_size = vec2(
-                inputs_size.x + outputs_size.x + node_style.spacing.item_spacing.x + inputs_top_row_ui.min_rect().width().max(outputs_bottom_row_ui.min_rect().width()),
+                inputs_size.x + outputs_size.x + node_style.spacing.item_spacing.x,
                 f32::max(inputs_size.y, outputs_size.y),
             );
+            new_pins_size.x = new_pins_size.x.max(inputs_top_row_ui.min_rect().width().max(outputs_bottom_row_ui.min_rect().width()));
 
             let mut pins_bottom = f32::max(inputs_rect.bottom(), outputs_rect.bottom());
 
