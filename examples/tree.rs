@@ -33,6 +33,8 @@ fn handle_tree_outputs(node: NodeId, snarl: &mut Snarl<DemoNode>) {
     if let DemoNode::Tree(current_count_tree, _) = snarl[node] {
         // The + 1 here is a bit of a hack, this ensures that we can also
         // use this function when a new wire was placed on the last input.
+        // Alternatively, snarl provides us the highest pin number for which it
+        // has a wire.
         current_count = current_count_tree + 1;
     } else {
         return;

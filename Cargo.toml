@@ -34,5 +34,5 @@ name = "demo"
 required-features = ["serde", "egui-probe"]
 
 [[example]]
-name = "minimal"
+name = "tree"
 required-features = ["serde"]
