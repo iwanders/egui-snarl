@@ -669,6 +669,9 @@ impl<T> Snarl<T> {
             viewer.node_menu(node, &inputs, &outputs, ui, snarl_state.scale(), self);
         });
 
+        // We could also do something here where we check the pointer position.
+        let draw_wiring_pins = snarl_state.has_new_wires();
+
         if !self.nodes.contains(node.0) {
             node_state.clear(ui.ctx());
             // If removed
@@ -826,6 +829,9 @@ impl<T> Snarl<T> {
                         // If removed
                         return;
                     }
+                    if !draw_wiring_pins && pin_info.visibility == pin::PinVisibility::Wiring {
+                        return;
+                    }
 
                     let y1 = ui.min_rect().max.y;
 
@@ -949,6 +955,9 @@ impl<T> Snarl<T> {
                     let pin_info = viewer.show_output(out_pin, ui, snarl_state.scale(), self); // TODO? Prevent calling this.
                     if !self.nodes.contains(node.0) {
                         // If removed
+                        return;
+                    }
+                    if !draw_wiring_pins && pin_info.visibility == pin::PinVisibility::Wiring {
                         return;
                     }
 

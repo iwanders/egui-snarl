@@ -53,6 +53,13 @@ impl PinLocation {
     }
 }
 
+/// Visibility properties of the pin.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum PinVisibility {
+    Always,
+    Wiring,
+}
+
 /// Information about a pin returned by `SnarlViewer::show_input` and `SnarlViewer::show_output`.
 pub struct PinInfo {
     /// Shape of the pin.
@@ -69,6 +76,9 @@ pub struct PinInfo {
 
     /// Location of the pin.
     pub location: PinLocation,
+
+    /// Denotes the visibility of this pin.
+    pub visibility: PinVisibility,
 }
 
 impl Default for PinInfo {
@@ -79,6 +89,7 @@ impl Default for PinInfo {
             fill: Color32::GRAY,
             stroke: Stroke::new(1.0, Color32::BLACK),
             location: PinLocation::Horizontal,
+            visibility: PinVisibility::Always,
         }
     }
 }
@@ -113,6 +124,18 @@ impl PinInfo {
         self.location = location;
         self
     }
+    /// Sets the location of the pin.
+    pub fn with_visibility(mut self, visibility: PinVisibility) -> Self {
+        self.visibility = visibility;
+        self
+    }
+
+    /// Set the alpha of the pin, both fill and stroke.
+    pub fn with_gamma(mut self, alpha: f32) -> Self {
+        self.fill = self.fill.gamma_multiply(alpha);
+        self.stroke.color = self.stroke.color.gamma_multiply(alpha);
+        self
+    }
 
     /// Creates a circle pin.
     pub fn circle() -> Self {
@@ -138,9 +161,14 @@ impl PinInfo {
         }
     }
 
-    /// Makes the pin vertical
+    /// Makes the pin vertical.
     pub fn vertical(mut self) -> Self {
         self.location = PinLocation::Vertical;
+        self
+    }
+    /// Makes the pin only show while wiring
+    pub fn wiring(mut self) -> Self {
+        self.visibility = PinVisibility::Wiring;
         self
     }
 

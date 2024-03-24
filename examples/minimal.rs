@@ -184,7 +184,11 @@ impl SnarlViewer<DemoNode> for DemoViewer {
             DemoNode::Tree => {
                 // You could draw elements here, like a label:
                 // ui.add(egui::Label::new(format!("{:?}", pin.id.output)));
-                PinInfo::triangle().with_fill(RELATION_COLOR).vertical()
+                if pin.remotes.is_empty() {
+                    PinInfo::triangle().with_fill(RELATION_COLOR).vertical().wiring().with_gamma(0.5)
+                } else {
+                    PinInfo::triangle().with_fill(RELATION_COLOR).vertical()
+                }
             }
         }
     }
@@ -196,7 +200,11 @@ impl SnarlViewer<DemoNode> for DemoViewer {
     ) -> Option<PinInfo> {
         match snarl[pin.id.node] {
             DemoNode::Tree => {
-                return Some(PinInfo::triangle().with_fill(RELATION_COLOR).vertical());
+                if pin.remotes.is_empty() {
+                    Some(PinInfo::triangle().with_fill(RELATION_COLOR).vertical().wiring().with_gamma(0.5))
+                } else {
+                    Some(PinInfo::triangle().with_fill(RELATION_COLOR).vertical())
+                }
             }
             _ => None
         }
