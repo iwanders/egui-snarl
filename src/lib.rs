@@ -457,7 +457,7 @@ impl<T> Snarl<T> {
 
     /// Returns InPinId for the provided node that are connected to some output.
     #[track_caller]
-    pub fn in_pins_connected(&mut self, idx: NodeId) ->  impl Iterator<Item = InPinId> + '_  {
+    pub fn in_pins_connected(&self, idx: NodeId) ->  impl Iterator<Item = InPinId> + '_  {
         self.wires.wired_node_inputs(idx)
     }
 
@@ -469,7 +469,7 @@ impl<T> Snarl<T> {
 
     /// Returns OutPinIds for the provided node that are connected to some input.
     #[track_caller]
-    pub fn out_pins_connected(&mut self, idx: NodeId) ->  impl Iterator<Item = OutPinId> + '_  {
+    pub fn out_pins_connected(&self, idx: NodeId) ->  impl Iterator<Item = OutPinId> + '_  {
         self.wires.wired_node_outputs(idx)
     }
 }
