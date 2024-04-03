@@ -1112,7 +1112,7 @@ impl<T> Snarl<T> {
             let mut pins_bottom = f32::max(inputs_rect.bottom(), outputs_rect.bottom());
 
             // Show body if there's one.
-            if viewer.has_body(&self.nodes.get(node.0).unwrap().value) {
+            if viewer.has_body(&self.nodes.get(node.0).unwrap().value) && open {
                 let body_left = inputs_rect.right() + node_style.spacing.item_spacing.x;
                 let body_right = outputs_rect.left() - node_style.spacing.item_spacing.x;
                 let body_top = payload_rect.top();
@@ -1153,7 +1153,7 @@ impl<T> Snarl<T> {
                 }
             }
 
-            if viewer.has_footer(&self.nodes[node.0].value) {
+            if viewer.has_footer(&self.nodes[node.0].value) && open {
                 let footer_left = node_rect.left();
                 let footer_right = node_rect.right();
                 let footer_top = pins_bottom + node_style.spacing.item_spacing.y;
