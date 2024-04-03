@@ -150,6 +150,9 @@ pub struct SnarlState {
 
     /// Flag indicating that the graph state is dirty must be saved.
     dirty: bool,
+
+    /// Rectangle for the current selection.
+    selection_rect: Option<Rect>
 }
 
 #[derive(Clone)]
@@ -158,6 +161,7 @@ struct SnarlStateData {
     scale: f32,
     target_scale: f32,
     new_wires: Option<NewWires>,
+    selection_rect: Option<Rect>,
 }
 
 impl SnarlState {
@@ -191,6 +195,7 @@ impl SnarlState {
             new_wires: data.new_wires,
             id,
             dirty,
+            selection_rect: data.selection_rect,
         }
     }
 
@@ -211,6 +216,7 @@ impl SnarlState {
                 new_wires: None,
                 id,
                 dirty: true,
+                selection_rect: None,
             };
         }
 
@@ -226,7 +232,6 @@ impl SnarlState {
             .max(style.min_scale);
 
         let offset = bb.center().to_vec2() * scale;
-
         SnarlState {
             offset,
             scale,
@@ -234,6 +239,7 @@ impl SnarlState {
             new_wires: None,
             id,
             dirty: true,
+            selection_rect: None,
         }
     }
 
@@ -248,6 +254,7 @@ impl SnarlState {
                         scale: self.scale,
                         target_scale: self.target_scale,
                         new_wires: self.new_wires,
+                        selection_rect: self.selection_rect,
                     },
                 )
             });
@@ -373,5 +380,32 @@ impl SnarlState {
     pub fn take_wires(&mut self) -> Option<NewWires> {
         self.dirty |= self.new_wires.is_some();
         self.new_wires.take()
+    }
+
+    pub fn selection_cancel(&mut self) {
+        self.selection_rect = None;
+        self.dirty = true;
+    }
+    pub fn selection_start(&mut self, p: Pos2) {
+        self.selection_rect = Some(Rect{min: p, max: p});
+        self.dirty = true;
+    }
+
+    #[inline(always)]
+    pub fn selection_drag(&mut self, delta: Vec2) {
+        if let Some(selection) = &mut self.selection_rect {
+            selection.max += delta;
+            self.dirty = true;
+        }
+    }
+
+    pub fn selection(&self) -> Option<Rect> {
+        // min is the fixed value, max is the moving one, but their signs
+        // aren't correct. Create a new rectangle that's correct.
+        if let Some(Rect{min, max}) = self.selection_rect {
+            Some(Rect::from_two_pos(min, max))
+        } else {
+            None
+        }
     }
 }

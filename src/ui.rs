@@ -3,8 +3,8 @@
 use std::{collections::HashMap, hash::Hash};
 
 use egui::{
-    collapsing_header::paint_default_icon, epaint::Shadow, pos2, vec2, Align, Color32, Frame, Id,
-    Layout, Modifiers, PointerButton, Pos2, Rect, Sense, Shape, Stroke, Style, Ui, Vec2,
+    collapsing_header::paint_default_icon, epaint::Shadow, epaint::RectShape, pos2, vec2, Align, Color32, Frame, Id,
+    Layout, Modifiers, PointerButton, Pos2, Rect, Sense, Shape, Stroke, Style, Ui, Vec2, TextureId, Rounding,
 };
 
 use crate::{InPin, InPinId, Node, NodeId, OutPin, OutPinId, Snarl};
@@ -423,8 +423,25 @@ impl<T> Snarl<T> {
                     }
                 }
 
-                if bg_r.dragged_by(PointerButton::Primary) {
-                    snarl_state.pan(-bg_r.drag_delta());
+                if !input.modifiers.shift {
+                    // Shift not held, normal drag
+                    if bg_r.dragged_by(PointerButton::Primary) {
+                        snarl_state.pan(-bg_r.drag_delta());
+                    }
+                } else {
+                    // Shift held, do a selection.
+                    if bg_r.drag_started() {
+                        if let Some(pos) = bg_r.interact_pointer_pos() {
+                            snarl_state.selection_start(pos);
+                        }
+                    }
+                    if bg_r.drag_released() { // drag_stopped() in 0.27.2
+                        snarl_state.selection_cancel();
+                    }
+                    if bg_r.dragged_by(PointerButton::Primary) {
+                        snarl_state.selection_drag(bg_r.drag_delta());
+                        println!("Selection: {:?}", snarl_state.selection());
+                    }
                 }
                 bg_r.context_menu(|ui| {
                     viewer.graph_menu(
@@ -473,6 +490,18 @@ impl<T> Snarl<T> {
                             );
                         }
                     }
+                }
+
+                if let Some(selection) = snarl_state.selection() {
+                    // Draw the rectangle.
+                    ui.painter().add(Shape::Rect(RectShape{
+                        rect:selection,
+                        rounding: Rounding::ZERO,
+                        fill: Color32::TRANSPARENT,
+                        fill_texture_id: TextureId::Managed(0),
+                        uv: Rect::ZERO,
+                        stroke: Stroke::new(1.0, Color32::from_rgb(0x00, 0xb0, 0xb0)),
+                    }));
                 }
 
                 match wire_shape_idx {
