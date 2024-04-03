@@ -207,6 +207,7 @@ struct DrawNodeResponse {
     node_to_top: Option<NodeId>,
     drag_released: bool,
     pin_hovered: Option<AnyPin>,
+    rect: Rect,
 }
 
 impl<T> Snarl<T> {
@@ -314,6 +315,7 @@ impl<T> Snarl<T> {
 
                 let mut input_info = HashMap::new();
                 let mut output_info = HashMap::new();
+                let mut node_rects = Vec::new();
 
                 let mut pin_hovered = None;
 
@@ -336,6 +338,8 @@ impl<T> Snarl<T> {
                         &input,
                         &mut output_info,
                     );
+                    node_rects.push((node_idx, response.rect));
+
                     if let Some(v) = response.node_to_top {
                         node_to_top = Some(v);
                     }
@@ -346,6 +350,16 @@ impl<T> Snarl<T> {
                         pin_hovered = Some(v);
                     }
                     drag_released |= response.drag_released;
+                }
+
+                // Check if any of the nodes are inside the selection box.
+                if let Some(selection) = snarl_state.selection() {
+                    println!("Selection: {:?}", snarl_state.selection());
+                    for (snarl_idx, node_rect) in node_rects {
+                        if node_rect.intersects(selection) {
+                            println!("Intersects with: {:?} {:?}", snarl_idx, node_rect);
+                        }
+                    }
                 }
 
                 let mut hovered_wire = None;
@@ -424,6 +438,8 @@ impl<T> Snarl<T> {
                 }
 
                 if !input.modifiers.shift {
+                    // Shift not held, always cancel selection.
+                    snarl_state.selection_cancel();
                     // Shift not held, normal drag
                     if bg_r.dragged_by(PointerButton::Primary) {
                         snarl_state.pan(-bg_r.drag_delta());
@@ -440,7 +456,6 @@ impl<T> Snarl<T> {
                     }
                     if bg_r.dragged_by(PointerButton::Primary) {
                         snarl_state.selection_drag(bg_r.drag_delta());
-                        println!("Selection: {:?}", snarl_state.selection());
                     }
                 }
                 bg_r.context_menu(|ui| {
@@ -514,6 +529,10 @@ impl<T> Snarl<T> {
                 }
 
                 if drag_released {
+                    // Always cancel the selection.
+                    snarl_state.selection_cancel();
+
+                    // Handle wires
                     let new_wires = snarl_state.take_wires();
                     if new_wires.is_some() {
                         ui.ctx().request_repaint();
@@ -709,6 +728,7 @@ impl<T> Snarl<T> {
             node_moved: None,
             drag_released: false,
             pin_hovered: None,
+            rect: Rect::NOTHING,
         };
 
         let viewport = ui.max_rect();
@@ -728,6 +748,7 @@ impl<T> Snarl<T> {
             NodeState::load(ui.ctx(), node_id, &node_style.spacing, snarl_state.scale());
 
         let node_rect = node_state.node_rect(node_pos, openness);
+        response.rect = node_rect;
 
         // Rect for node + frame margin.
         let node_frame_rect = node_frame.total_margin().expand_rect(node_rect);
