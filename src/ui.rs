@@ -354,12 +354,15 @@ impl<T> Snarl<T> {
 
                 // Check if any of the nodes are inside the selection box.
                 if let Some(selection) = snarl_state.selection() {
-                    println!("Selection: {:?}", snarl_state.selection());
-                    for (snarl_idx, node_rect) in node_rects {
+                    // println!("Selection: {:?}", snarl_state.selection());
+                    let in_selection_box = node_rects.iter().filter_map(|(idx, node_rect)|{
                         if node_rect.intersects(selection) {
-                            println!("Intersects with: {:?} {:?}", snarl_idx, node_rect);
+                            Some(*idx)
+                        } else {
+                            None
                         }
-                    }
+                    }).collect::<Vec<_>>();
+                    viewer.selection_pending(&in_selection_box, &input.modifiers, self);
                 }
 
                 let mut hovered_wire = None;
@@ -717,6 +720,10 @@ impl<T> Snarl<T> {
     where
         V: SnarlViewer<T>,
     {
+        // Copy the node frame such that we can modify its stroke and fill.
+        let mut node_frame = node_frame.clone();
+        let mut header_frame = header_frame.clone();
+
         let Node {
             pos,
             open,
@@ -811,6 +818,17 @@ impl<T> Snarl<T> {
             ("node", node_id),
         );
         node_ui.set_style(node_style.clone());
+
+        // Override the frame strokes, if set.
+        if let Some(stroke_override) = viewer.node_stroke(node, &node_frame.stroke, self) {
+            node_frame.stroke = stroke_override;
+            header_frame.stroke = stroke_override;
+        }
+
+        if let Some(fill_override) = viewer.node_fill(node, &node_frame.fill, self) {
+            node_frame.fill = fill_override;
+            header_frame.fill = fill_override;
+        }
 
         node_frame.show(node_ui, |ui| {
             // Render header frame.

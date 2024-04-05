@@ -1,4 +1,4 @@
-use egui::{Color32, Pos2, Style, Ui};
+use egui::{Color32, Pos2, Style, Ui, Modifiers, Stroke};
 
 use crate::{InPin, NodeId, OutPin, Snarl};
 
@@ -176,5 +176,24 @@ pub trait SnarlViewer<T> {
     #[inline]
     fn drop_inputs(&mut self, pin: &InPin, snarl: &mut Snarl<T>) {
         snarl.drop_inputs(pin.id);
+    }
+
+    /// Called with all nodes that have their bounding box touched by the
+    /// current selection rectangle.
+    fn selection_pending(&mut self, ids: &[NodeId], modifiers: &Modifiers, snarl: &mut Snarl<T>) {
+        let _ = (ids, modifiers, snarl);
+        // Default is to do nothing with this.
+    }
+
+    /// Provide an override for the stroke of this node.
+    fn node_stroke(&mut self, id: NodeId, current: &Stroke, snarl: &mut Snarl<T>) -> Option<Stroke> {
+        let _ = (id, current, snarl);
+        None
+    }
+
+    /// Provide an override for the fill of this node.
+    fn node_fill(&mut self, id: NodeId, current: &Color32, snarl: &mut Snarl<T>) -> Option<Color32> {
+        let _ = (id, current, snarl);
+        None
     }
 }

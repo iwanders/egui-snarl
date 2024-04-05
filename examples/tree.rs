@@ -1,8 +1,8 @@
 use eframe::{App, CreationContext};
-use egui::{Color32, Ui};
+use egui::{Color32, Ui, Modifiers};
 use egui_snarl::{
     ui::{PinInfo, SnarlStyle, SnarlViewer},
-    InPin, NodeId, OutPin, Snarl,
+    InPin, NodeId, OutPin, Snarl
 };
 
 const STRING_COLOR: Color32 = Color32::from_rgb(0x00, 0xb0, 0x00);
@@ -26,7 +26,9 @@ impl DemoNode {
     
 }
 
-struct DemoViewer;
+struct DemoViewer {
+    selection: Vec<NodeId>,
+}
 
 fn handle_tree_outputs(node: NodeId, snarl: &mut Snarl<DemoNode>) {
     let current_count;
@@ -387,11 +389,32 @@ impl SnarlViewer<DemoNode> for DemoViewer {
         }
     }
     
+    fn selection_pending(&mut self, ids: &[NodeId], modifiers: &Modifiers, snarl: &mut Snarl<DemoNode>) {
+        let _ = (ids, modifiers, snarl);
+        // Default is to do nothing with this.
+        self.selection = ids.to_vec();
+    }
+
+    fn node_stroke(&mut self, id: NodeId, current: &egui::Stroke, snarl: &mut Snarl<DemoNode>) -> Option<egui::Stroke> {
+        if self.selection.contains(&id) {
+            Some(egui::Stroke::new(5.0, current.color))
+        } else {
+            None
+        }
+    }
+    fn node_fill(&mut self, id: NodeId, current: &egui::Color32, snarl: &mut Snarl<DemoNode>) -> Option<egui::Color32> {
+        if self.selection.contains(&id) {
+            Some(Color32::RED)
+        } else {
+            None
+        }
+    }
 }
 
 pub struct DemoApp {
     snarl: Snarl<DemoNode>,
     style: SnarlStyle,
+    viewer: DemoViewer,
 }
 
 impl DemoApp {
@@ -421,8 +444,8 @@ impl DemoApp {
             }
         };
         // let style = SnarlStyle::new();
-
-        DemoApp { snarl, style }
+        let viewer = DemoViewer{selection: vec![]};
+        DemoApp { snarl, style, viewer }
     }
 }
 
@@ -456,7 +479,7 @@ impl App for DemoApp {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             self.snarl
-                .show(&mut DemoViewer, &self.style, egui::Id::new("snarl"), ui);
+                .show(&mut self.viewer, &self.style, egui::Id::new("snarl"), ui);
         });
     }
 
