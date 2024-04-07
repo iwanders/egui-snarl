@@ -962,9 +962,6 @@ impl<T> Snarl<T> {
                         // If removed
                         return;
                     }
-                    if !draw_wiring_pins && pin_info.visibility == pin::PinVisibility::Wiring {
-                        return;
-                    }
 
                     let y1 = ui.min_rect().max.y;
 
@@ -980,6 +977,10 @@ impl<T> Snarl<T> {
                     let pin_pos = pos2(x, y);
 
                     input_positions.insert(in_pin.id, (pin_pos, pin_info.fill, pin_info.location));
+
+                    if !draw_wiring_pins && pin_info.visibility == pin::PinVisibility::Wiring {
+                        return;
+                    }
 
                     // Interact with pin shape.
                     let r = ui.interact(
@@ -1090,9 +1091,6 @@ impl<T> Snarl<T> {
                         // If removed
                         return;
                     }
-                    if !draw_wiring_pins && pin_info.visibility == pin::PinVisibility::Wiring {
-                        return;
-                    }
 
                     let y1 = ui.min_rect().max.y;
 
@@ -1109,6 +1107,10 @@ impl<T> Snarl<T> {
                     let pin_pos = pos2(x, y);
 
                     output_positions.insert(out_pin.id, (pin_pos, pin_info.fill, pin_info.location));
+
+                    if !draw_wiring_pins && pin_info.visibility == pin::PinVisibility::Wiring {
+                        return;
+                    }
 
                     let r = ui.interact(
                         Rect::from_center_size(pin_pos, vec2(pin_size, pin_size)),
