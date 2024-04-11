@@ -392,9 +392,9 @@ impl SnarlState {
     }
 
     #[inline(always)]
-    pub fn selection_drag(&mut self, delta: Vec2) {
+    pub fn selection_drag(&mut self, new_pos: Pos2) {
         if let Some(selection) = &mut self.selection_rect {
-            selection.max += delta;
+            selection.max = new_pos;
             self.dirty = true;
         }
     }

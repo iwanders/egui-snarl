@@ -404,7 +404,8 @@ impl SnarlViewer<DemoNode> for DemoViewer {
     }
     fn node_fill(&mut self, id: NodeId, current: &egui::Color32, snarl: &mut Snarl<DemoNode>) -> Option<egui::Color32> {
         if self.selection.contains(&id) {
-            Some(Color32::RED)
+            // Some(Color32::RED)
+            None
         } else {
             None
         }

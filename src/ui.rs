@@ -458,7 +458,9 @@ impl<T> Snarl<T> {
                         snarl_state.selection_cancel();
                     }
                     if bg_r.dragged_by(PointerButton::Primary) {
-                        snarl_state.selection_drag(bg_r.drag_delta());
+                        if let Some(new_pos) = bg_r.interact_pointer_pos(){
+                            snarl_state.selection_drag(new_pos);
+                        }
                     }
                 }
                 bg_r.context_menu(|ui| {
