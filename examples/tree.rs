@@ -9,7 +9,7 @@ const STRING_COLOR: Color32 = Color32::from_rgb(0x00, 0xb0, 0x00);
 const UNTYPED_COLOR: Color32 = Color32::from_rgb(0xb0, 0xb0, 0xb0);
 const RELATION_COLOR: Color32 = Color32::from_rgb(0x00, 0xb0, 0xb0);
 
-#[derive(Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 enum DemoNode {
     /// Node with single input.
     /// Displays the value of the input.

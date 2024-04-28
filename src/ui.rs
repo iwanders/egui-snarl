@@ -210,7 +210,7 @@ struct DrawNodeResponse {
     rect: Rect,
 }
 
-impl<T> Snarl<T> {
+impl<T: std::fmt::Debug> Snarl<T> {
     fn draw_background(style: &SnarlStyle, snarl_state: &SnarlState, viewport: &Rect, ui: &mut Ui) {
         let viewport = Viewport {
             rect: *viewport,
@@ -371,7 +371,16 @@ impl<T> Snarl<T> {
                 let mut wire_hit = false;
 
                 for wire in self.wires.iter() {
-                    let (from, color_from, direction_from) = output_info[&wire.out_pin];
+                    let (from, color_from, direction_from) = if let Some((from, color_from, direction_from)) = output_info.get(&wire.out_pin) {
+                        (*from, *color_from, *direction_from)
+                    } else {
+                        // Probably have a wire to an pin that doesn't exist.
+                        // Print the node it sits in between in the panic.
+                        let from = &self[wire.out_pin.node];
+                        let to = &self[wire.in_pin.node];
+                        panic!("could not get outpin: {wire:?}, from: {from:?} to {to:?}");
+                    };
+                    // let (from, color_from, direction_from) = output_info[&wire.out_pin];
                     let (to, color_to, direction_to) = input_info[&wire.in_pin];
 
                     if !wire_hit
