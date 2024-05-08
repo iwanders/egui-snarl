@@ -196,4 +196,10 @@ pub trait SnarlViewer<T> {
         let _ = (id, current, snarl);
         None
     }
+
+    /// Called when a node is moved, to facilitate moving the selection.
+    fn node_moved(&mut self, id: NodeId, delta: crate::ui::Vec2, new_pos: crate::ui::Pos2, snarl: &mut Snarl<T>) {
+        // let _ = (id, current, snarl);
+        // None
+    }
 }

@@ -410,6 +410,18 @@ impl SnarlViewer<DemoNode> for DemoViewer {
             None
         }
     }
+
+    /// Called when a node is moved, to facilitate moving the selection.
+    fn node_moved(&mut self, id: NodeId, delta: egui::Vec2, new_pos: egui::Pos2, snarl: &mut Snarl<DemoNode>) {
+        if self.selection.contains(&id) {
+            // Move the entire selection.
+            for (iter_id, pos, node) in snarl.nodes_pos_ids_mut() {
+                if self.selection.contains(&iter_id) && id != iter_id{
+                    *pos += delta;
+                }
+            }
+        }
+    }
 }
 
 pub struct DemoApp {

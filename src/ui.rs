@@ -695,8 +695,10 @@ impl<T: std::fmt::Debug> Snarl<T> {
 
         if let Some((node, delta)) = node_moved {
             ui.ctx().request_repaint();
+            let nodeid = node;
             let node = &mut self.nodes[node.0];
             node.pos += delta;
+            viewer.node_moved(nodeid, delta, node.pos, self);
         }
 
         if let Some(node_idx) = node_to_top {
