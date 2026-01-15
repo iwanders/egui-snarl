@@ -12,7 +12,7 @@ const NUMBER_COLOR: Color32 = Color32::from_rgb(0xb0, 0x00, 0x00);
 const IMAGE_COLOR: Color32 = Color32::from_rgb(0xb0, 0x00, 0xb0);
 const UNTYPED_COLOR: Color32 = Color32::from_rgb(0xb0, 0xb0, 0xb0);
 
-#[derive(Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 enum DemoNode {
     /// Node with single input.
     /// Displays the value of the input.
@@ -534,7 +534,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
     }
 }
 
-#[derive(Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 struct ExprNode {
     text: String,
     bindings: Vec<String>,
@@ -557,13 +557,13 @@ impl ExprNode {
     }
 }
 
-#[derive(Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Copy, serde::Serialize, serde::Deserialize, Debug)]
 enum UnOp {
     Pos,
     Neg,
 }
 
-#[derive(Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Copy, serde::Serialize, serde::Deserialize, Debug)]
 enum BinOp {
     Add,
     Sub,
@@ -571,7 +571,7 @@ enum BinOp {
     Div,
 }
 
-#[derive(Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, Debug)]
 enum Expr {
     Var(String),
     Val(f64),
@@ -886,7 +886,7 @@ impl App for DemoApp {
 
         egui::SidePanel::left("style").show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                egui_probe::Probe::new("Snarl style", &mut self.style).show(ui);
+                egui_probe::Probe::new(&mut self.style).show(ui);
             });
         });
 
@@ -918,7 +918,7 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "egui-snarl demo",
         native_options,
-        Box::new(|cx| Box::new(DemoApp::new(cx))),
+        Box::new(|cx| Ok(Box::new(DemoApp::new(cx)))),
     )
 }
 

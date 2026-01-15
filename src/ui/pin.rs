@@ -41,14 +41,14 @@ impl PinLocation {
     pub fn input_vec(&self) -> Vec2 {
         match *self {
             PinLocation::Horizontal => vec2(-1.0, 0.0),
-            PinLocation::Vertical => vec2(0.0, -1.0)
+            PinLocation::Vertical => vec2(0.0, -1.0),
         }
     }
     /// Normalised vector pointing outwards from the output.
     pub fn output_vec(&self) -> Vec2 {
         match *self {
             PinLocation::Horizontal => vec2(1.0, 0.0),
-            PinLocation::Vertical => vec2(0.0, 1.0)
+            PinLocation::Vertical => vec2(0.0, 1.0),
         }
     }
 }
@@ -201,7 +201,7 @@ pub fn draw_pin(painter: &Painter, pin: PinInfo, pos: Pos2, base_size: f32) {
                 points,
                 closed: true,
                 fill: pin.fill,
-                stroke: pin.stroke,
+                stroke: pin.stroke.into(),
             }));
         }
         PinShape::Square => {
@@ -216,7 +216,7 @@ pub fn draw_pin(painter: &Painter, pin: PinInfo, pos: Pos2, base_size: f32) {
                 points,
                 closed: true,
                 fill: pin.fill,
-                stroke: pin.stroke,
+                stroke: pin.stroke.into(),
             }));
         }
         PinShape::Custom(f) => f.call(

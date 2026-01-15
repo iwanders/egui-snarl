@@ -1,4 +1,4 @@
-use egui::{epaint::PathShape, pos2, Color32, Pos2, Vec2, Rect, Shape, Stroke, Ui};
+use egui::{epaint::PathShape, pos2, Color32, Pos2, Rect, Shape, Stroke, Ui, Vec2};
 
 /// Layer where wires are rendered.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -41,9 +41,12 @@ fn wire_bezier(
 
     // If using simple wires, just scale down from_2 and to_2.
     if simple {
-        let t = 1.0 - ((frame_size * 2.0 - between) / (frame_size * 2.0)).max(0.0).min(1.0);
-        let from_2 = from + frame_size * from_direction* t;
-        let to_2 = to + frame_size * to_direction* t;
+        let t = 1.0
+            - ((frame_size * 2.0 - between) / (frame_size * 2.0))
+                .max(0.0)
+                .min(1.0);
+        let from_2 = from + frame_size * from_direction * t;
+        let to_2 = to + frame_size * to_direction * t;
         let middle_1 = from_2 + (to_2 - from_2).normalized() * frame_size * t;
         let middle_2 = to_2 + (from_2 - to_2).normalized() * frame_size * t;
         return [from, from_2, middle_1, middle_2, to_2, to];
@@ -215,7 +218,7 @@ fn draw_bezier(shapes: &mut Vec<Shape>, points: &[Pos2; 6], mut stroke: Stroke) 
         points: path,
         closed: false,
         fill: Color32::TRANSPARENT,
-        stroke,
+        stroke: stroke.into(),
     });
 
     shapes.push(shape);

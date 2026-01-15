@@ -1,8 +1,8 @@
 use eframe::{App, CreationContext};
-use egui::{Color32, Ui, Modifiers};
+use egui::{Color32, Modifiers, Ui};
 use egui_snarl::{
     ui::{PinInfo, SnarlStyle, SnarlViewer},
-    InPin, NodeId, OutPin, Snarl
+    InPin, NodeId, OutPin, Snarl,
 };
 
 const STRING_COLOR: Color32 = Color32::from_rgb(0x00, 0xb0, 0x00);
@@ -19,12 +19,13 @@ enum DemoNode {
     String(String),
 
     /// Tree element with string input and variable horizontal outputs.
-    Tree(usize /* used outputs */, String /* current value */),
+    Tree(
+        usize,  /* used outputs */
+        String, /* current value */
+    ),
 }
 
-impl DemoNode {
-    
-}
+impl DemoNode {}
 
 struct DemoViewer {
     selection: Vec<NodeId>,
@@ -41,16 +42,16 @@ fn handle_tree_outputs(node: NodeId, snarl: &mut Snarl<DemoNode>) {
     let mut values_in_use = 0;
     if let Some(v) = current_count {
         // truncate to the first output that has remotes.
-        for i in 0..=v{
-            let outpinid = egui_snarl::OutPinId{node, output: i};
+        for i in 0..=v {
+            let outpinid = egui_snarl::OutPinId { node, output: i };
             let full_pin = snarl.out_pin(outpinid);
-            if !full_pin.remotes.is_empty(){
-                values_in_use = i + 1;  // +1 to go from index to count.
+            if !full_pin.remotes.is_empty() {
+                values_in_use = i + 1; // +1 to go from index to count.
             }
         }
     }
 
-    if let DemoNode::Tree(ref mut v, _) = snarl[node]{
+    if let DemoNode::Tree(ref mut v, _) = snarl[node] {
         *v = values_in_use;
     }
 }
@@ -63,13 +64,12 @@ impl SnarlViewer<DemoNode> for DemoViewer {
             (DemoNode::Sink, _) => {
                 unreachable!("Sink node has no outputs")
             }
-            (DemoNode::Tree(_, _), _) => {
-            }
+            (DemoNode::Tree(_, _), _) => {}
             (_, DemoNode::Sink) => {}
             (_, DemoNode::String(_)) => {
                 unreachable!("String node has no inputs")
             }
-            (_, _) => { }
+            (_, _) => {}
         }
 
         for &remote in &to.remotes {
@@ -118,15 +118,11 @@ impl SnarlViewer<DemoNode> for DemoViewer {
         match node {
             DemoNode::Sink => 0,
             DemoNode::String(_) => 1,
-            DemoNode::Tree(children, _) => children + 1, // children 
+            DemoNode::Tree(children, _) => children + 1, // children
         }
     }
 
-    fn vertical_input(
-        &mut self,
-        pin: &InPin,
-        snarl: &mut Snarl<DemoNode>
-    ) -> Option<PinInfo> {
+    fn vertical_input(&mut self, pin: &InPin, snarl: &mut Snarl<DemoNode>) -> Option<PinInfo> {
         match snarl[pin.id.node] {
             DemoNode::Tree(_, _) => {
                 if pin.id.input == 0 {
@@ -135,7 +131,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
                     None
                 }
             }
-            _ => None
+            _ => None,
         }
     }
 
@@ -174,17 +170,28 @@ impl SnarlViewer<DemoNode> for DemoViewer {
             }
             DemoNode::Tree(_, _) => {
                 // Just collect both inputs to update the interior string here.
-                let root_pin = snarl.in_pin(egui_snarl::InPinId{node: pin.id.node, input: 0});
-                let input_pin = snarl.in_pin(egui_snarl::InPinId{node: pin.id.node, input: 1});
+                let root_pin = snarl.in_pin(egui_snarl::InPinId {
+                    node: pin.id.node,
+                    input: 0,
+                });
+                let input_pin = snarl.in_pin(egui_snarl::InPinId {
+                    node: pin.id.node,
+                    input: 1,
+                });
                 let mut root_string = "".to_owned();
                 let mut input_string = "".to_owned();
-                for pin in [root_pin, input_pin]{
+                for pin in [root_pin, input_pin] {
                     for remote in pin.remotes.iter() {
-                        let dest = if pin.id.input == 0 { &mut root_string} else {&mut input_string};
+                        let dest = if pin.id.input == 0 {
+                            &mut root_string
+                        } else {
+                            &mut input_string
+                        };
                         match snarl[remote.node] {
                             DemoNode::Sink => unreachable!("Sink node has no outputs"),
                             DemoNode::Tree(_, ref root_string_value) => {
-                                *dest = root_string_value.to_owned() + format!(":{}", remote.output).as_str();
+                                *dest = root_string_value.to_owned()
+                                    + format!(":{}", remote.output).as_str();
                             }
                             DemoNode::String(ref value) => {
                                 *dest = value.to_owned();
@@ -195,7 +202,10 @@ impl SnarlViewer<DemoNode> for DemoViewer {
                 {
                     let node = &mut snarl[pin.id.node];
                     if let DemoNode::Tree(_, ref mut v) = node {
-                        *v = format!("{input_string}{}{root_string}", if !input_string.is_empty() {"_"} else {""});
+                        *v = format!(
+                            "{input_string}{}{root_string}",
+                            if !input_string.is_empty() { "_" } else { "" }
+                        );
                     }
                 }
                 if pin.id.input == 0 {
@@ -235,7 +245,11 @@ impl SnarlViewer<DemoNode> for DemoViewer {
                 // You could draw elements here, like a label:
                 // ui.add(egui::Label::new(format!("{:?}", pin.id.output)));
                 if pin.remotes.is_empty() {
-                    PinInfo::triangle().with_fill(RELATION_COLOR).vertical().wiring().with_gamma(0.5)
+                    PinInfo::triangle()
+                        .with_fill(RELATION_COLOR)
+                        .vertical()
+                        .wiring()
+                        .with_gamma(0.5)
                 } else {
                     PinInfo::triangle().with_fill(RELATION_COLOR).vertical()
                 }
@@ -243,20 +257,22 @@ impl SnarlViewer<DemoNode> for DemoViewer {
         }
     }
 
-    fn vertical_output(
-        &mut self,
-        pin: &OutPin,
-        snarl: &mut Snarl<DemoNode>
-    ) -> Option<PinInfo> {
+    fn vertical_output(&mut self, pin: &OutPin, snarl: &mut Snarl<DemoNode>) -> Option<PinInfo> {
         match snarl[pin.id.node] {
             DemoNode::Tree(_, _) => {
                 if pin.remotes.is_empty() {
-                    Some(PinInfo::triangle().with_fill(RELATION_COLOR).vertical().wiring().with_gamma(0.5))
+                    Some(
+                        PinInfo::triangle()
+                            .with_fill(RELATION_COLOR)
+                            .vertical()
+                            .wiring()
+                            .with_gamma(0.5),
+                    )
                 } else {
                     Some(PinInfo::triangle().with_fill(RELATION_COLOR).vertical())
                 }
             }
-            _ => None
+            _ => None,
         }
     }
 
@@ -282,9 +298,7 @@ impl SnarlViewer<DemoNode> for DemoViewer {
             DemoNode::String(_) => {
                 unreachable!("String node has no inputs")
             }
-            DemoNode::Tree(_, _) => {
-                RELATION_COLOR
-            }
+            DemoNode::Tree(_, _) => RELATION_COLOR,
         }
     }
 
@@ -385,24 +399,39 @@ impl SnarlViewer<DemoNode> for DemoViewer {
                 ui.label(format!("{c} outputs"));
                 ui.label(format!("value: {v}"));
             }
-            _ => ()
+            _ => (),
         }
     }
-    
-    fn selection_pending(&mut self, ids: &[NodeId], modifiers: &Modifiers, snarl: &mut Snarl<DemoNode>) {
+
+    fn selection_pending(
+        &mut self,
+        ids: &[NodeId],
+        modifiers: &Modifiers,
+        snarl: &mut Snarl<DemoNode>,
+    ) {
         let _ = (ids, modifiers, snarl);
         // Default is to do nothing with this.
         self.selection = ids.to_vec();
     }
 
-    fn node_stroke(&mut self, id: NodeId, current: &egui::Stroke, snarl: &mut Snarl<DemoNode>) -> Option<egui::Stroke> {
+    fn node_stroke(
+        &mut self,
+        id: NodeId,
+        current: &egui::Stroke,
+        snarl: &mut Snarl<DemoNode>,
+    ) -> Option<egui::Stroke> {
         if self.selection.contains(&id) {
             Some(egui::Stroke::new(5.0, current.color))
         } else {
             None
         }
     }
-    fn node_fill(&mut self, id: NodeId, current: &egui::Color32, snarl: &mut Snarl<DemoNode>) -> Option<egui::Color32> {
+    fn node_fill(
+        &mut self,
+        id: NodeId,
+        current: &egui::Color32,
+        snarl: &mut Snarl<DemoNode>,
+    ) -> Option<egui::Color32> {
         if self.selection.contains(&id) {
             // Some(Color32::RED)
             None
@@ -412,11 +441,17 @@ impl SnarlViewer<DemoNode> for DemoViewer {
     }
 
     /// Called when a node is moved, to facilitate moving the selection.
-    fn node_moved(&mut self, id: NodeId, delta: egui::Vec2, new_pos: egui::Pos2, snarl: &mut Snarl<DemoNode>) {
+    fn node_moved(
+        &mut self,
+        id: NodeId,
+        delta: egui::Vec2,
+        new_pos: egui::Pos2,
+        snarl: &mut Snarl<DemoNode>,
+    ) {
         if self.selection.contains(&id) {
             // Move the entire selection.
             for (iter_id, pos, node) in snarl.nodes_pos_ids_mut() {
-                if self.selection.contains(&iter_id) && id != iter_id{
+                if self.selection.contains(&iter_id) && id != iter_id {
                     *pos += delta;
                 }
             }
@@ -457,8 +492,12 @@ impl DemoApp {
             }
         };
         // let style = SnarlStyle::new();
-        let viewer = DemoViewer{selection: vec![]};
-        DemoApp { snarl, style, viewer }
+        let viewer = DemoViewer { selection: vec![] };
+        DemoApp {
+            snarl,
+            style,
+            viewer,
+        }
     }
 }
 
@@ -486,7 +525,7 @@ impl App for DemoApp {
 
         egui::SidePanel::left("style").show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                egui_probe::Probe::new("Snarl style", &mut self.style).show(ui);
+                egui_probe::Probe::new(&mut self.style).show(ui);
             });
         });
 
@@ -518,7 +557,7 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "egui-snarl demo",
         native_options,
-        Box::new(|cx| Box::new(DemoApp::new(cx))),
+        Box::new(|cx| Ok(Box::new(DemoApp::new(cx)))),
     )
 }
 

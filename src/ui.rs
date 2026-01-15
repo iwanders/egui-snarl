@@ -3,8 +3,9 @@
 use std::{collections::HashMap, hash::Hash};
 
 use egui::{
-    collapsing_header::paint_default_icon, epaint::Shadow, epaint::RectShape, pos2, vec2, Align, Color32, Frame, Id,
-    Layout, Modifiers, PointerButton, Pos2, Rect, Sense, Shape, Stroke, Style, Ui, Vec2, TextureId, Rounding,
+    collapsing_header::paint_default_icon, epaint::RectShape, epaint::Shadow, pos2, vec2, Align,
+    Color32, Frame, Id, Layout, Modifiers, PointerButton, Pos2, Rect, Rounding, Sense, Shape,
+    Stroke, Style, TextureId, Ui, UiBuilder, Vec2,
 };
 
 use crate::{InPin, InPinId, Node, NodeId, OutPin, OutPinId, Snarl};
@@ -117,7 +118,7 @@ mod serde_frame_option {
     pub struct Frame {
         pub inner_margin: egui::Margin,
         pub outer_margin: egui::Margin,
-        pub rounding: egui::Rounding,
+        pub rounding: egui::CornerRadius,
         pub shadow: egui::epaint::Shadow,
         pub fill: egui::Color32,
         pub stroke: egui::Stroke,
@@ -131,7 +132,7 @@ mod serde_frame_option {
             Some(frame) => Frame {
                 inner_margin: frame.inner_margin,
                 outer_margin: frame.outer_margin,
-                rounding: frame.rounding,
+                rounding: frame.corner_radius,
                 shadow: frame.shadow,
                 fill: frame.fill,
                 stroke: frame.stroke,
@@ -149,7 +150,7 @@ mod serde_frame_option {
         Ok(frame_opt.map(|frame| egui::Frame {
             inner_margin: frame.inner_margin,
             outer_margin: frame.outer_margin,
-            rounding: frame.rounding,
+            corner_radius: frame.rounding,
             shadow: frame.shadow,
             fill: frame.fill,
             stroke: frame.stroke,
@@ -355,13 +356,16 @@ impl<T: std::fmt::Debug> Snarl<T> {
                 // Check if any of the nodes are inside the selection box.
                 if let Some(selection) = snarl_state.selection() {
                     // println!("Selection: {:?}", snarl_state.selection());
-                    let in_selection_box = node_rects.iter().filter_map(|(idx, node_rect)|{
-                        if node_rect.intersects(selection) {
-                            Some(*idx)
-                        } else {
-                            None
-                        }
-                    }).collect::<Vec<_>>();
+                    let in_selection_box = node_rects
+                        .iter()
+                        .filter_map(|(idx, node_rect)| {
+                            if node_rect.intersects(selection) {
+                                Some(*idx)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<Vec<_>>();
                     viewer.selection_pending(&in_selection_box, &input.modifiers, self);
                 }
 
@@ -371,15 +375,18 @@ impl<T: std::fmt::Debug> Snarl<T> {
                 let mut wire_hit = false;
 
                 for wire in self.wires.iter() {
-                    let (from, color_from, direction_from) = if let Some((from, color_from, direction_from)) = output_info.get(&wire.out_pin) {
-                        (*from, *color_from, *direction_from)
-                    } else {
-                        // Probably have a wire to an pin that doesn't exist.
-                        // Print the node it sits in between in the panic.
-                        let from = &self[wire.out_pin.node];
-                        let to = &self[wire.in_pin.node];
-                        panic!("could not get outpin: {wire:?}, from: {from:?} to {to:?}");
-                    };
+                    let (from, color_from, direction_from) =
+                        if let Some((from, color_from, direction_from)) =
+                            output_info.get(&wire.out_pin)
+                        {
+                            (*from, *color_from, *direction_from)
+                        } else {
+                            // Probably have a wire to an pin that doesn't exist.
+                            // Print the node it sits in between in the panic.
+                            let from = &self[wire.out_pin.node];
+                            let to = &self[wire.in_pin.node];
+                            panic!("could not get outpin: {wire:?}, from: {from:?} to {to:?}");
+                        };
                     // let (from, color_from, direction_from) = output_info[&wire.out_pin];
                     let (to, color_to, direction_to) = input_info[&wire.in_pin];
 
@@ -412,10 +419,12 @@ impl<T: std::fmt::Debug> Snarl<T> {
                                     bg_r.clicked_by(PointerButton::Secondary);
 
                                 // Background is not hovered then.
-                                bg_r.hovered = false;
-                                bg_r.clicked = [false; egui::NUM_POINTER_BUTTONS];
-                                bg_r.double_clicked = [false; egui::NUM_POINTER_BUTTONS];
-                                bg_r.triple_clicked = [false; egui::NUM_POINTER_BUTTONS];
+                                bg_r.flags.remove(egui::response::Flags::HOVERED);
+                                // bg_r.hovered = false;
+                                // bg_r.clicked = [false; egui::NUM_POINTER_BUTTONS];
+                                bg_r.flags.remove(egui::response::Flags::CLICKED);
+                                // bg_r.double_clicked = [false; egui::NUM_POINTER_BUTTONS];
+                                // bg_r.triple_clicked = [false; egui::NUM_POINTER_BUTTONS];
                             }
                         }
                     }
@@ -463,11 +472,12 @@ impl<T: std::fmt::Debug> Snarl<T> {
                             snarl_state.selection_start(pos);
                         }
                     }
-                    if bg_r.drag_released() { // drag_stopped() in 0.27.2
+                    if bg_r.drag_stopped() {
+                        // drag_stopped() in 0.27.2
                         snarl_state.selection_cancel();
                     }
                     if bg_r.dragged_by(PointerButton::Primary) {
-                        if let Some(new_pos) = bg_r.interact_pointer_pos(){
+                        if let Some(new_pos) = bg_r.interact_pointer_pos() {
                             snarl_state.selection_drag(new_pos);
                         }
                     }
@@ -523,13 +533,17 @@ impl<T: std::fmt::Debug> Snarl<T> {
 
                 if let Some(selection) = snarl_state.selection() {
                     // Draw the rectangle.
-                    ui.painter().add(Shape::Rect(RectShape{
-                        rect:selection,
-                        rounding: Rounding::ZERO,
+                    ui.painter().add(Shape::Rect(RectShape {
+                        rect: selection,
+                        corner_radius: egui::CornerRadius::ZERO,
                         fill: Color32::TRANSPARENT,
-                        fill_texture_id: TextureId::Managed(0),
-                        uv: Rect::ZERO,
+                        //fill_texture_id: TextureId::Managed(0),
+                        //uv: Rect::ZERO,
                         stroke: Stroke::new(1.0, Color32::from_rgb(0x00, 0xb0, 0xb0)),
+                        stroke_kind: egui::StrokeKind::Outside,
+                        round_to_pixels: None,
+                        blur_width: 0.0,
+                        brush: None,
                     }));
                 }
 
@@ -582,39 +596,55 @@ impl<T: std::fmt::Debug> Snarl<T> {
                         //  If the source and destination pins are disjoint sets, we swap the pins.
                         //  If the source and destination pins overlap, we only allow the operation iff the destination pins
                         //   are empty after the source pins would be disconnected. This avoids having to think about where to move
-                        //   that pin and potentially make a wrong choice, and it also doesn't make assumptions about the 
+                        //   that pin and potentially make a wrong choice, and it also doesn't make assumptions about the
                         //   network allowing multiple outputs.
                         (Some(NewWires::Out(left_pins)), Some(AnyPin::Out(right_out_pin))) => {
                             let mut valid = true;
                             let left_anchor = left_pins.last().unwrap();
-                            let relative_indices = left_pins.iter().map(|p| {p.output as i64 - left_anchor.output as i64}).collect::<Vec<_>>();
+                            let relative_indices = left_pins
+                                .iter()
+                                .map(|p| p.output as i64 - left_anchor.output as i64)
+                                .collect::<Vec<_>>();
                             let mut right_pins = vec![];
                             for offset in relative_indices.iter() {
                                 let right_value = offset + right_out_pin.output as i64;
                                 if right_value < 0 {
                                     valid = false
                                 }
-                                right_pins.push(OutPinId{node: right_out_pin.node, output: right_value as usize});
+                                right_pins.push(OutPinId {
+                                    node: right_out_pin.node,
+                                    output: right_value as usize,
+                                });
                             }
                             // Okay, we now have the left and right sets, check if they intersect.
-                            let left_set = left_pins.iter().copied().collect::<std::collections::HashSet<OutPinId>>();
-                            let right_set = right_pins.iter().copied().collect::<std::collections::HashSet<OutPinId>>();
+                            let left_set = left_pins
+                                .iter()
+                                .copied()
+                                .collect::<std::collections::HashSet<OutPinId>>();
+                            let right_set = right_pins
+                                .iter()
+                                .copied()
+                                .collect::<std::collections::HashSet<OutPinId>>();
 
                             let swapping = left_set.is_disjoint(&right_set);
                             // There's overlap, check if the slots we'd occupy are empty after we disconnect.
                             // We will disconnect things in the left set, so we only need to check what is in right
                             // and not in left.
-                            let overlap_valid = swapping || right_set.difference(&left_set).all(|v|self.out_pin(*v).remotes.is_empty());
+                            let overlap_valid = swapping
+                                || right_set
+                                    .difference(&left_set)
+                                    .all(|v| self.out_pin(*v).remotes.is_empty());
                             if valid && overlap_valid {
                                 let mut to_disconnect = vec![];
                                 let mut to_connect = vec![];
-                                for (left_out, right_out) in left_pins.iter().zip(right_pins.iter()) {
+                                for (left_out, right_out) in left_pins.iter().zip(right_pins.iter())
+                                {
                                     let left_out_pin = self.out_pin(*left_out);
                                     for input in left_out_pin.remotes.iter() {
                                         to_disconnect.push((*left_out, *input));
                                         to_connect.push((*right_out, *input));
                                     }
-            
+
                                     if swapping {
                                         let right_out_pin = self.out_pin(*right_out);
                                         for input in right_out_pin.remotes.iter() {
@@ -626,10 +656,18 @@ impl<T: std::fmt::Debug> Snarl<T> {
 
                                 // Disconnnect then reconnect, that should always be the valid order.
                                 for (disconnect_out, disconnect_in) in to_disconnect {
-                                    viewer.disconnect(&OutPin::new(self, disconnect_out), &InPin::new(self, disconnect_in), self);
+                                    viewer.disconnect(
+                                        &OutPin::new(self, disconnect_out),
+                                        &InPin::new(self, disconnect_in),
+                                        self,
+                                    );
                                 }
                                 for (connect_out, connect_in) in to_connect {
-                                    viewer.connect(&OutPin::new(self, connect_out), &InPin::new(self, connect_in), self);
+                                    viewer.connect(
+                                        &OutPin::new(self, connect_out),
+                                        &InPin::new(self, connect_in),
+                                        self,
+                                    );
                                 }
                             }
                         }
@@ -637,24 +675,39 @@ impl<T: std::fmt::Debug> Snarl<T> {
                         (Some(NewWires::In(left_pins)), Some(AnyPin::In(right_pin))) => {
                             let mut valid = true;
                             let left_anchor = left_pins.last().unwrap();
-                            let relative_indices = left_pins.iter().map(|p| {p.input as i64 - left_anchor.input as i64}).collect::<Vec<_>>();
+                            let relative_indices = left_pins
+                                .iter()
+                                .map(|p| p.input as i64 - left_anchor.input as i64)
+                                .collect::<Vec<_>>();
                             let mut right_pins = vec![];
                             for offset in relative_indices.iter() {
                                 let right_value = offset + right_pin.input as i64;
                                 if right_value < 0 {
                                     valid = false
                                 }
-                                right_pins.push(InPinId{node: right_pin.node, input: right_value as usize});
+                                right_pins.push(InPinId {
+                                    node: right_pin.node,
+                                    input: right_value as usize,
+                                });
                             }
                             // Okay, we now have the left and right sets, check if they intersect.
-                            let left_set = left_pins.iter().copied().collect::<std::collections::HashSet<InPinId>>();
-                            let right_set = right_pins.iter().copied().collect::<std::collections::HashSet<InPinId>>();
+                            let left_set = left_pins
+                                .iter()
+                                .copied()
+                                .collect::<std::collections::HashSet<InPinId>>();
+                            let right_set = right_pins
+                                .iter()
+                                .copied()
+                                .collect::<std::collections::HashSet<InPinId>>();
 
                             let swapping = left_set.is_disjoint(&right_set);
                             // There's overlap, check if the slots we'd occupy are empty after we disconnect.
                             // We will disconnect things in the left set, so we only need to check what is in right
                             // and not in left.
-                            let overlap_valid = swapping || right_set.difference(&left_set).all(|v|self.in_pin(*v).remotes.is_empty());
+                            let overlap_valid = swapping
+                                || right_set
+                                    .difference(&left_set)
+                                    .all(|v| self.in_pin(*v).remotes.is_empty());
                             if valid && overlap_valid {
                                 let mut to_disconnect = vec![];
                                 let mut to_connect = vec![];
@@ -664,7 +717,7 @@ impl<T: std::fmt::Debug> Snarl<T> {
                                         to_disconnect.push((*output, *left_in));
                                         to_connect.push((*output, *right_in));
                                     }
-            
+
                                     if swapping {
                                         let right_out_pin = self.in_pin(*right_in);
                                         for output in right_out_pin.remotes.iter() {
@@ -676,10 +729,18 @@ impl<T: std::fmt::Debug> Snarl<T> {
 
                                 // Disconnnect then reconnect, that should always be the valid order.
                                 for (disconnect_out, disconnect_in) in to_disconnect {
-                                    viewer.disconnect(&OutPin::new(self, disconnect_out), &InPin::new(self, disconnect_in), self);
+                                    viewer.disconnect(
+                                        &OutPin::new(self, disconnect_out),
+                                        &InPin::new(self, disconnect_in),
+                                        self,
+                                    );
                                 }
                                 for (connect_out, connect_in) in to_connect {
-                                    viewer.connect(&OutPin::new(self, connect_out), &InPin::new(self, connect_in), self);
+                                    viewer.connect(
+                                        &OutPin::new(self, connect_out),
+                                        &InPin::new(self, connect_in),
+                                        self,
+                                    );
                                 }
                             }
                         }
@@ -825,10 +886,11 @@ impl<T: std::fmt::Debug> Snarl<T> {
             return response;
         }
 
-        let node_ui = &mut ui.child_ui_with_id_source(
-            node_frame_rect,
-            Layout::top_down(Align::Center),
-            ("node", node_id),
+        let node_ui = &mut ui.new_child(
+            egui::UiBuilder::new()
+                .id_salt(("node", node_id))
+                .max_rect(node_frame_rect)
+                .layout(Layout::top_down(Align::Center)),
         );
         node_ui.set_style(node_style.clone());
 
@@ -850,10 +912,11 @@ impl<T: std::fmt::Debug> Snarl<T> {
             let mut header_frame_rect = header_frame.total_margin().expand_rect(header_rect);
 
             // Show node's header
-            let header_ui = &mut ui.child_ui_with_id_source(
-                header_frame_rect,
-                Layout::top_down(Align::Center),
-                "header",
+            let header_ui: &mut Ui = &mut ui.new_child(
+                UiBuilder::new()
+                    .max_rect(header_frame_rect)
+                    .layout(Layout::top_down(Align::Center))
+                    .id_salt("header"),
             );
 
             header_frame.show(header_ui, |ui: &mut Ui| {
@@ -900,9 +963,10 @@ impl<T: std::fmt::Debug> Snarl<T> {
 
             let min_pin_y = header_rect.center().y;
 
-            let input_x = node_frame_rect.left() + node_frame.inner_margin.left + pin_size;
+            let input_x = node_frame_rect.left() + node_frame.inner_margin.left as f32 + pin_size;
 
-            let output_x = node_frame_rect.right() - node_frame.inner_margin.right - pin_size;
+            let output_x =
+                node_frame_rect.right() - node_frame.inner_margin.right as f32 - pin_size;
 
             // Input/output pin block
 
@@ -936,32 +1000,37 @@ impl<T: std::fmt::Debug> Snarl<T> {
             );
 
             // Input pins on the top.
-            let inputs_top_row_ui = &mut ui.child_ui_with_id_source(
-                top_input_rect,
-                Layout::left_to_right(Align::Center),
-                "top_inputs",
+            let inputs_top_row_ui = &mut ui.new_child(
+                UiBuilder::new()
+                    .max_rect(top_input_rect)
+                    .layout(Layout::left_to_right(Align::Center))
+                    .id_salt("top_inputs"),
             );
+
             inputs_top_row_ui.set_clip_rect(viewport);
 
             // Input pins on the left.
-            let inputs_ui = &mut ui.child_ui_with_id_source(
-                payload_rect,
-                Layout::top_down(Align::Min),
-                "inputs",
+            let inputs_ui = &mut ui.new_child(
+                UiBuilder::new()
+                    .max_rect(payload_rect)
+                    .layout(Layout::top_down(Align::Min))
+                    .id_salt("inputs"),
             );
+
             inputs_ui.set_clip_rect(payload_clip_rect.intersect(viewport));
 
             for in_pin in &inputs {
                 // Depending on pin location, determine ui.
-                let (draw_base, vertical_input) : (&mut Ui, bool) = if let Some(pin_info) = viewer.vertical_input(in_pin, self) {
-                    if pin_info.location == pin::PinLocation::Vertical {
-                        (inputs_top_row_ui, true)
+                let (draw_base, vertical_input): (&mut Ui, bool) =
+                    if let Some(pin_info) = viewer.vertical_input(in_pin, self) {
+                        if pin_info.location == pin::PinLocation::Vertical {
+                            (inputs_top_row_ui, true)
+                        } else {
+                            (inputs_ui, false)
+                        }
                     } else {
                         (inputs_ui, false)
-                    }
-                } else {
-                    (inputs_ui, false)
-                };
+                    };
                 // Show input pin.
                 draw_base.with_layout(Layout::left_to_right(Align::Min), |ui| {
                     // Allocate space for pin shape.
@@ -1027,7 +1096,7 @@ impl<T: std::fmt::Debug> Snarl<T> {
                             snarl_state.start_new_wire_in(in_pin.id);
                         }
                     }
-                    if r.drag_released() {
+                    if r.drag_stopped() {
                         response.drag_released = true;
                     }
 
@@ -1064,33 +1133,41 @@ impl<T: std::fmt::Debug> Snarl<T> {
                 pos2(node_frame_rect.min.x, node_frame_rect.max.y),
                 pos2(node_frame_rect.max.x, node_frame_rect.max.y),
             );
-            let outputs_bottom_row_ui = &mut ui.child_ui_with_id_source(
-                bottom_output_rect,
-                Layout::left_to_right(Align::Center),
-                "bottom_outputs",
+            let outputs_bottom_row_ui = &mut ui.new_child(
+                UiBuilder::new()
+                    .max_rect(bottom_output_rect)
+                    .layout(Layout::left_to_right(Align::Center))
+                    .id_salt("bottom_outputs"),
             );
+
             outputs_bottom_row_ui.set_clip_rect(viewport);
 
             // Outputs are placed under the header and must not go outside of the header frame.
-            let outputs_ui = &mut ui.child_ui_with_id_source(
-                payload_rect,
-                Layout::top_down(Align::Max),
-                "outputs",
+            let outputs_ui = &mut ui.new_child(
+                UiBuilder::new()
+                    .max_rect(payload_rect)
+                    .layout(Layout::top_down(Align::Max))
+                    .id_salt("outputs"),
             );
             outputs_ui.set_clip_rect(payload_clip_rect.intersect(viewport));
 
             // Output pins on the right or bottom.
             for out_pin in &outputs {
                 // Depending on pin location, determine ui.
-                let (draw_base, layout, vertical_output) : (&mut Ui, Layout, bool) = if let Some(pin_info) = viewer.vertical_output(out_pin, self) {
-                    if pin_info.location == pin::PinLocation::Vertical {
-                        (outputs_bottom_row_ui, Layout::left_to_right(Align::Min), true)
+                let (draw_base, layout, vertical_output): (&mut Ui, Layout, bool) =
+                    if let Some(pin_info) = viewer.vertical_output(out_pin, self) {
+                        if pin_info.location == pin::PinLocation::Vertical {
+                            (
+                                outputs_bottom_row_ui,
+                                Layout::left_to_right(Align::Min),
+                                true,
+                            )
+                        } else {
+                            (outputs_ui, Layout::right_to_left(Align::Min), false)
+                        }
                     } else {
                         (outputs_ui, Layout::right_to_left(Align::Min), false)
-                    }
-                } else {
-                    (outputs_ui, Layout::right_to_left(Align::Min), false)
-                };
+                    };
                 // Show output pin.
                 draw_base.with_layout(layout, |ui| {
                     // Allocate space for pin shape.
@@ -1119,7 +1196,8 @@ impl<T: std::fmt::Debug> Snarl<T> {
 
                     let pin_pos = pos2(x, y);
 
-                    output_positions.insert(out_pin.id, (pin_pos, pin_info.fill, pin_info.location));
+                    output_positions
+                        .insert(out_pin.id, (pin_pos, pin_info.fill, pin_info.location));
 
                     if !draw_wiring_pins && pin_info.visibility == pin::PinVisibility::Wiring {
                         return;
@@ -1157,7 +1235,7 @@ impl<T: std::fmt::Debug> Snarl<T> {
                             snarl_state.start_new_wire_out(out_pin.id);
                         }
                     }
-                    if r.drag_released() {
+                    if r.drag_stopped() {
                         response.drag_released = true;
                     }
 
@@ -1190,7 +1268,12 @@ impl<T: std::fmt::Debug> Snarl<T> {
                 inputs_size.x + outputs_size.x + node_style.spacing.item_spacing.x,
                 f32::max(inputs_size.y, outputs_size.y),
             );
-            new_pins_size.x = new_pins_size.x.max(inputs_top_row_ui.min_rect().width().max(outputs_bottom_row_ui.min_rect().width()));
+            new_pins_size.x = new_pins_size.x.max(
+                inputs_top_row_ui
+                    .min_rect()
+                    .width()
+                    .max(outputs_bottom_row_ui.min_rect().width()),
+            );
 
             let mut pins_bottom = f32::max(inputs_rect.bottom(), outputs_rect.bottom());
 
@@ -1204,21 +1287,16 @@ impl<T: std::fmt::Debug> Snarl<T> {
                     Rect::from_min_max(pos2(body_left, body_top), pos2(body_right, f32::INFINITY));
                 body_rect = node_state.align_body(body_rect);
 
-                let mut body_ui = ui.child_ui_with_id_source(
-                    body_rect,
-                    Layout::left_to_right(Align::Min),
-                    "body",
+                let body_ui = &mut ui.new_child(
+                    UiBuilder::new()
+                        .max_rect(body_rect)
+                        .layout(Layout::left_to_right(Align::Min))
+                        .id_salt("body"),
                 );
+
                 body_ui.set_clip_rect(payload_clip_rect.intersect(viewport));
 
-                viewer.show_body(
-                    node,
-                    &inputs,
-                    &outputs,
-                    &mut body_ui,
-                    snarl_state.scale(),
-                    self,
-                );
+                viewer.show_body(node, &inputs, &outputs, body_ui, snarl_state.scale(), self);
 
                 body_rect = body_ui.min_rect();
                 ui.expand_to_include_rect(body_rect.intersect(payload_clip_rect));
@@ -1248,18 +1326,20 @@ impl<T: std::fmt::Debug> Snarl<T> {
 
                 footer_rect = node_state.align_footer(footer_rect);
 
-                let mut footer_ui = ui.child_ui_with_id_source(
-                    footer_rect,
-                    Layout::left_to_right(Align::Min),
-                    "footer",
+                let footer_ui = &mut ui.new_child(
+                    UiBuilder::new()
+                        .max_rect(footer_rect)
+                        .layout(Layout::left_to_right(Align::Min))
+                        .id_salt("footer"),
                 );
+
                 footer_ui.set_clip_rect(payload_clip_rect.intersect(viewport));
 
                 viewer.show_footer(
                     node,
                     &inputs,
                     &outputs,
-                    &mut footer_ui,
+                    footer_ui,
                     snarl_state.scale(),
                     self,
                 );
