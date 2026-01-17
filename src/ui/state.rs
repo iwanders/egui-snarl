@@ -129,7 +129,7 @@ impl NodeState {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum NewWires {
     In(Vec<InPinId>),
     Out(Vec<OutPinId>),
@@ -152,7 +152,7 @@ pub struct SnarlState {
     dirty: bool,
 
     /// Rectangle for the current selection.
-    selection_rect: Option<Rect>
+    selection_rect: Option<Rect>,
 }
 
 #[derive(Clone)]
@@ -387,7 +387,7 @@ impl SnarlState {
         self.dirty = true;
     }
     pub fn selection_start(&mut self, p: Pos2) {
-        self.selection_rect = Some(Rect{min: p, max: p});
+        self.selection_rect = Some(Rect { min: p, max: p });
         self.dirty = true;
     }
 
@@ -402,7 +402,7 @@ impl SnarlState {
     pub fn selection(&self) -> Option<Rect> {
         // min is the fixed value, max is the moving one, but their signs
         // aren't correct. Create a new rectangle that's correct.
-        if let Some(Rect{min, max}) = self.selection_rect {
+        if let Some(Rect { min, max }) = self.selection_rect {
             Some(Rect::from_two_pos(min, max))
         } else {
             None

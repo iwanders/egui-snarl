@@ -245,7 +245,7 @@ impl<T: std::fmt::Debug> Snarl<T> {
             .unwrap_or_else(|| ui.visuals().widgets.noninteractive.bg_stroke);
 
         let input = ui.ctx().input(|i| Input {
-            scroll_delta: i.raw_scroll_delta.y,
+            scroll_delta: i.smooth_scroll_delta.y,
             hover_pos: i.pointer.hover_pos(),
             modifiers: i.modifiers,
             // primary_pressed: i.pointer.primary_pressed(),
@@ -1101,7 +1101,6 @@ impl<T: std::fmt::Debug> Snarl<T> {
                     }
 
                     let mut pin_size = pin_size;
-
                     match input.hover_pos {
                         Some(hover_pos) if r.rect.contains(hover_pos) => {
                             if input.modifiers.shift {

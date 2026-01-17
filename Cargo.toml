@@ -13,7 +13,8 @@ categories = ["gui", "visualization"]
 serde = ["dep:serde", "egui/serde", "slab/serde"]
 
 [dependencies]
-egui = { version = "0.33" }
+#egui = { version = "0.33" }
+egui = {git="https://github.com/emilk/egui.git", rev="f714380b66a44dac9a3a1832df45aaf8760c29b8", features=["serde"] }
 slab = { version = "0.4" }
 serde = { version = "1.0", features = ["derive"], optional = true }
 tiny-fn = { version = "0.1.6" }
@@ -21,8 +22,10 @@ tiny-fn = { version = "0.1.6" }
 egui-probe = { version = "0.10", features = ["derive"], optional = true }
 
 [dev-dependencies]
-eframe = { version = "0.33", features = ["serde", "persistence"] }
-egui_extras = { version = "0.33", features = ["all_loaders"] }
+#eframe = { version = "0.33", features = ["serde", "persistence"] }
+eframe = {git="https://github.com/emilk/egui.git", rev="f714380b66a44dac9a3a1832df45aaf8760c29b8",  features = ["glow", "serde", "persistence"]  }
+#egui_extras = { version = "0.33", features = ["all_loaders"] }
+egui_extras = {git="https://github.com/emilk/egui.git", rev="f714380b66a44dac9a3a1832df45aaf8760c29b8",  features=["all_loaders"]}
 syn = { version = "2.0", features = ["extra-traits"] }
 serde_json = { version = "1.0" }
 

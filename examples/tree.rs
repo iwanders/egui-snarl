@@ -502,7 +502,18 @@ impl DemoApp {
 }
 
 impl App for DemoApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {}
+
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        let snarl = serde_json::to_string(&self.snarl).unwrap();
+        storage.set_string("snarl", snarl);
+
+        let style = serde_json::to_string(&self.style).unwrap();
+        storage.set_string("style", style);
+    }
+
+    fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+        let ctx = ui.ctx();
         egui_extras::install_image_loaders(ctx);
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -523,24 +534,16 @@ impl App for DemoApp {
             });
         });
 
+        #[cfg(feature = "egui_probe")]
         egui::SidePanel::left("style").show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 egui_probe::Probe::new(&mut self.style).show(ui);
             });
         });
-
         egui::CentralPanel::default().show(ctx, |ui| {
             self.snarl
                 .show(&mut self.viewer, &self.style, egui::Id::new("snarl"), ui);
         });
-    }
-
-    fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        let snarl = serde_json::to_string(&self.snarl).unwrap();
-        storage.set_string("snarl", snarl);
-
-        let style = serde_json::to_string(&self.style).unwrap();
-        storage.set_string("style", style);
     }
 }
 
