@@ -861,9 +861,12 @@ impl<T: std::fmt::Debug> Snarl<T> {
         if r.clicked() || r.dragged() {
             response.node_to_top = Some(node);
         }
-        r.context_menu(|ui| {
-            viewer.node_menu(node, &inputs, &outputs, ui, snarl_state.scale(), self);
-        });
+
+        egui::Popup::context_menu(&r)
+            .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
+            .show(|ui| {
+                viewer.node_menu(node, &inputs, &outputs, ui, snarl_state.scale(), self);
+            });
 
         // We could also do something here where we check the pointer position.
         let draw_wiring_pins = snarl_state.has_new_wires();
